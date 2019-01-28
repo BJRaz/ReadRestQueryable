@@ -4,70 +4,46 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.Xml;
+using System.IO;
+using System.Collections;
+using System.Linq.Expressions;
 
 namespace ReadXmlLib
 {
-    public class AdgangsAdresseReader<T> : IEnumerable<T>
+	public class AdgangsAdresseReader<T> : IEnumerable<T>
     {
         private string query;
+		private string baseUrl;
 
-        public AdgangsAdresseReader(string query)
+		public AdgangsAdresseReader(string query)
         {
             this.query = query;
+            this.baseUrl = @"https://dawa.aws.dk/adgangsadresser";
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            WebRequest req = WebRequest.Create(@"http://geo.oiorest.dk/adresser" + query);
+			var requestUrl =  baseUrl + ((query == string.Empty) ? query + "?struktur=mini" : query + "&struktur=mini");
+
+			WebRequest req = WebRequest.Create(requestUrl);
 
             var contentstream = req.GetResponse().GetResponseStream();
 
-            //x = XmlReader.Create (new StreamReader (@"/Users/brian/Desktop/test.xml"));
 
-            var _x = XmlReader.Create(contentstream);
+			var sr = new StreamReader(contentstream);
+			string result = sr.ReadToEnd();
 
-            while (_x.Read())
-            {
+			foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<T[]>(result))
+			{
+				yield return item;
+			}
 
-                if (_x.IsStartElement() && _x.Name == "adgangsadresse")
-                {
-                    _x.Read();	// id element
-
-                    var a = new AdgangsAdresse
-                    {
-                        ID = _x.ReadElementContentAsString(),
-                        BygningsNavn = _x.ReadElementContentAsString()
-                    };
-
-                    _x.Read();
-                    a.Kode = _x.ReadElementContentAsString();
-                    a.Vejnavn = _x.ReadElementContentAsString();
-                    _x.Read();
-                    a.HusNr = _x.ReadElementContentAsString();
-                    if (_x.IsEmptyElement)
-                    {
-                        _x.Read();  // postnummer
-                        _x.Read();  // nr
-                        a.Postnr = _x.ReadElementContentAsString();
-                        // bynavn
-                        a.ByNavn = _x.ReadElementContentAsString();
-                    }
-                    else
-                    {
-                        _x.ReadElementContentAsString();
-                        _x.Read();  // nr
-                        a.Postnr = _x.ReadElementContentAsString();
-                        // bynavn
-                        a.ByNavn = _x.ReadElementContentAsString();
-                    }
-                    yield return (T)((object)a);
-                }
-            }
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+			return GetEnumerator();
         }
-    }
+
+	}
 }

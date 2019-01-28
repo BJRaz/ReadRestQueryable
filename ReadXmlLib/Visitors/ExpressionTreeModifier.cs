@@ -9,19 +9,18 @@ namespace ReadXmlLib.Visitors
 
     class ExpressionTreeModifier : ExpressionVisitor
     {
-        private IQueryable<AdgangsAdresse> _q;
+        private IQueryable _queryable;
 
-        public ExpressionTreeModifier(IQueryable<AdgangsAdresse> q)
+        public ExpressionTreeModifier(IQueryable q)
         {
-            _q = q;
+            _queryable = q;	// this is a AdgangsAdresseReader instance ...
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.Type == typeof(AdgangsAdresseRepository<AdgangsAdresse>))
-                return Expression.Constant(this._q);
-            else
-                return node;
+                return Expression.Constant(_queryable);		// this exchanges AdgangsAdresseRepository 
+            return node;
         }
     }
 }

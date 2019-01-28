@@ -10,7 +10,7 @@ namespace ReadXmlLib
 {
     public class AdgangsAdresseRepository<TIn> : IOrderedQueryable<TIn>
     {
-        XmlReader _x;
+        
         IQueryProvider _provider;
         Expression _expression;
 

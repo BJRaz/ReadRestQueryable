@@ -40,7 +40,7 @@ namespace ReadXmlLib
             set;
         }
 
-        public string ByNavn
+        public string PostNrNavn
         {
             get;
             set;

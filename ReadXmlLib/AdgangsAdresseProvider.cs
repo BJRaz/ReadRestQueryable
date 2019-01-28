@@ -29,10 +29,10 @@ namespace ReadXmlLib
 
         public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
         {
-            // result is type of IEnumerable<T>
+            
             var o = Execute(expression);
 
-            var result = (TResult)o; 
+            var result = (TResult)o; // cast to IEnumerable<T>
 
             return result;
             
@@ -40,24 +40,27 @@ namespace ReadXmlLib
 
         public object Execute(System.Linq.Expressions.Expression expression)
         {
-            var v = new QueryVisitor();
-            v.Visit(expression);
-            
-            var reader = Activator.CreateInstance(
-                        typeof(AdgangsAdresseReader<>).MakeGenericType(typeOfElement),
-                        new object[] { v.Evaluate() });
-                
-            var n = ((IEnumerable<AdgangsAdresse>)reader).ToList();
 
-            var q = n.AsQueryable();
+			var m = this.GetType().GetMethod("GetQueryable").MakeGenericMethod(typeOfElement);
 
-            var pro = q.Provider;
+			var queryable = m.Invoke(this, new object[] { expression }) as IQueryable;
 
-            var e = new ExpressionTreeModifier(q);
-            var exp = e.Visit(expression);
+			var provider = queryable.Provider;										// this is the readers Provider - defaults to IEnumerable Provider (memory/object linq)
 
-            return pro.CreateQuery(exp);
+			var expressiontreemodifier = new ExpressionTreeModifier(queryable);		// changes the AdgangAdresseProvider in expression to 
+			var modifiedTree = expressiontreemodifier.Visit(expression);			// AdgangAdresseReader
+
+			return provider.CreateQuery(modifiedTree);								// create an Executable query from modifiedTree
 
         }
+
+		public object GetQueryable<TResult>(System.Linq.Expressions.Expression expression)
+		{ 
+			var v = new QueryVisitor();
+			v.Visit(expression);
+
+			var reader = new AdgangsAdresseReader<TResult>(v.Evaluate());
+			return reader.AsQueryable();
+		}
     }
 }
