@@ -23,7 +23,7 @@ namespace ReadXmlLib
 
         public IEnumerator<T> GetEnumerator()
         {
-			var requestUrl =  baseUrl + ((query == string.Empty) ? query + "?struktur=mini" : query + "&struktur=mini");
+			var requestUrl =  baseUrl + ((query == string.Empty) ? query + "?struktur=flad" : query + "&struktur=flad");
 
 			WebRequest req = WebRequest.Create(requestUrl);
 

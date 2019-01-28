@@ -17,7 +17,7 @@ namespace ReadXmlLib
 
 			var items = from a in new AdgangsAdresseRepository<AdgangsAdresse>()
 					where a.Postnr == x.ToString()
-						&& a.Vejnavn == "Virketoften"
+			               && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
                         orderby a.Vejnavn
                         select a;
 			var i = 1;

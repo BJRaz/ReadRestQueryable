@@ -41,13 +41,17 @@ namespace ReadXmlLib
         public object Execute(System.Linq.Expressions.Expression expression)
         {
 
-			var m = this.GetType().GetMethod("GetQueryable").MakeGenericMethod(typeOfElement);
+			var method = GetType().GetMethod("GetQueryable").MakeGenericMethod(typeOfElement);
 
-			var queryable = m.Invoke(this, new object[] { expression }) as IQueryable;
+			var queryable = method.Invoke(this, new object[] { expression }) as IQueryable;
 
 			var provider = queryable.Provider;										// this is the readers Provider - defaults to IEnumerable Provider (memory/object linq)
 
-			var expressiontreemodifier = new ExpressionTreeModifier(queryable);		// changes the AdgangAdresseProvider in expression to 
+			var methodExp = GetType().GetMethod("GetExpressionVisitor").MakeGenericMethod(typeOfElement);
+
+			var expressiontreemodifier =  methodExp.Invoke(this, new object[] { queryable }) as System.Linq.Expressions.ExpressionVisitor;
+
+				// changes the AdgangAdresseProvider in expression to 
 			var modifiedTree = expressiontreemodifier.Visit(expression);			// AdgangAdresseReader
 
 			return provider.CreateQuery(modifiedTree);								// create an Executable query from modifiedTree
@@ -61,6 +65,11 @@ namespace ReadXmlLib
 
 			var reader = new AdgangsAdresseReader<TResult>(v.Evaluate());
 			return reader.AsQueryable();
+		}
+
+		public object GetExpressionVisitor<TResult>(IQueryable queryable)
+		{ 
+			return new ExpressionTreeModifier<TResult>(queryable);	
 		}
     }
 }

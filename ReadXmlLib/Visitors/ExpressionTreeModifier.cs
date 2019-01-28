@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 namespace ReadXmlLib.Visitors
 {
 
-    class ExpressionTreeModifier : ExpressionVisitor
+    class ExpressionTreeModifier<T> : ExpressionVisitor
     {
         private IQueryable _queryable;
 
@@ -18,7 +18,7 @@ namespace ReadXmlLib.Visitors
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type == typeof(AdgangsAdresseRepository<AdgangsAdresse>))
+			if (node.Type == typeof(AdgangsAdresseRepository<T>))
                 return Expression.Constant(_queryable);		// this exchanges AdgangsAdresseRepository 
             return node;
         }

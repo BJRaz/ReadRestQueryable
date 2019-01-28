@@ -45,7 +45,11 @@ namespace ReadXmlLib
             get;
             set;
         }
-
+		public string SupplerendeBynavn
+		{
+			get;
+			set;
+		}
 	}
 }
 
