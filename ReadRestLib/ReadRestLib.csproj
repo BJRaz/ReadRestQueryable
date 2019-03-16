@@ -8,9 +8,9 @@
     <ProjectGuid>{AC2F1CA3-7B2D-447F-BD66-70BFA680E7BD}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ReadXmlLib</RootNamespace>
-    <AssemblyName>ReadXmlLib</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <RootNamespace>ReadRestLib</RootNamespace>
+    <AssemblyName>ReadRestib</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -38,15 +38,31 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Web" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp">
+      <HintPath>..\packages\RestSharp.106.6.9\lib\net452\RestSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdgangsAdresse.cs" />
     <Compile Include="AdgangsAdresseProvider.cs" />
-    <Compile Include="AdgangsAdresseReader.cs" />
     <Compile Include="AdgangsAdresseRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Visitors\QueryVisitor.cs" />
     <Compile Include="Visitors\ExpressionTreeModifier.cs" />
+    <Compile Include="Model\AdgangsAdresse.cs" />
+    <Compile Include="Readers\AdgangsAdresseReader.cs" />
+    <Compile Include="Visitors\EvaluateVisitorNew.cs" />
+    <Compile Include="Visitors\EvaluateVisitor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="Readers\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

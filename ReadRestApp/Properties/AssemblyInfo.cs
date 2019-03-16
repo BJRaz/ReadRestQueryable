@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ReadXmlApp")]
+[assembly: AssemblyTitle("ReadRestApp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ReadXmlApp")]
-[assembly: AssemblyCopyright("Copyright © HP 2015")]
+[assembly: AssemblyCompany("BJR")]
+[assembly: AssemblyProduct("ReadRestApp")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
