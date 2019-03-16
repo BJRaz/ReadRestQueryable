@@ -10,7 +10,7 @@ namespace ReadRestLib.Visitors
 
 	class EvaluateVisitor : ExpressionVisitor
 	{
-		StringBuilder querystr = new StringBuilder();
+		readonly StringBuilder querystr = new StringBuilder();
 
 		protected override Expression VisitLambda<T>(Expression<T> node)
 		{
@@ -52,14 +52,14 @@ namespace ReadRestLib.Visitors
 
 					while (memberInfos.Count > 0)
 					{
-						MemberInfo memberInfo = memberInfos.Pop();
+						var memberInfo = memberInfos.Pop();
 						if (memberInfo.MemberType == MemberTypes.Property)
 						{
 							objref = objref.GetType().GetProperty(memberInfo.Name).GetValue(objref, null);
 						}
 						else if (memberInfo.MemberType == MemberTypes.Field)
 						{
-							FieldInfo fieldInfo = objref.GetType()
+							var fieldInfo = objref.GetType()
 								.GetField(memberInfo.Name,
 									BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 							if (
@@ -73,7 +73,7 @@ namespace ReadRestLib.Visitors
 
 				if (parameter != null)
 				{
-					PropertyInfo pi = parameter.Type.GetProperty(memberInfos.Pop().Name);
+					var propertyinfo = parameter.Type.GetProperty(memberInfos.Pop().Name);
 					//if (pi != null)
 					//{
 					//	var fatt = (FieldNameAttribute)Attribute.GetCustomAttribute(pi, typeof(FieldNameAttribute));
@@ -113,8 +113,8 @@ namespace ReadRestLib.Visitors
 				{
 					if (node.Member.DeclaringType != null)
 					{
-						PropertyInfo pi = node.Member.DeclaringType.GetProperty(node.Member.Name);
-						objref = pi.GetValue(null, null);
+						var propertyinfo = node.Member.DeclaringType.GetProperty(node.Member.Name);
+						objref = propertyinfo.GetValue(null, null);
 					}
 
 				}
@@ -122,8 +122,8 @@ namespace ReadRestLib.Visitors
 				{
 					if (node.Member.DeclaringType != null)
 					{
-						FieldInfo fi = node.Member.DeclaringType.GetField(node.Member.Name);
-						objref = fi.GetValue(null);
+						var fieldinfo = node.Member.DeclaringType.GetField(node.Member.Name);
+						objref = fieldinfo.GetValue(null);
 					}
 
 				}

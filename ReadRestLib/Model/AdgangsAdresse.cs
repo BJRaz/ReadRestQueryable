@@ -1,50 +1,49 @@
-﻿using System;
-
-namespace ReadRestLib.Model
+﻿namespace ReadRestLib.Model
 {
 	public class AdgangsAdresse
 	{
-		public AdgangsAdresse ()
+
+		public string ID
 		{
-
-		}
-
-		public string ID {
 			get;
 			set;
 		}
 
-		public string BygningsNavn {
+		public string BygningsNavn
+		{
 			get;
 			set;
 		}
 
-		public string Vejnavn {
+		public string Vejnavn
+		{
 			get;
 			set;
 		}
 
-		public string Kode {
+		public string Kode
+		{
 			get;
 			set;
 		}
 
-		public string HusNr {
+		public string HusNr
+		{
 			get;
 			set;
 		}
-        
-        public string Postnr
-        {
-            get;
-            set;
-        }
 
-        public string PostNrNavn
-        {
-            get;
-            set;
-        }
+		public string Postnr
+		{
+			get;
+			set;
+		}
+
+		public string PostNrNavn
+		{
+			get;
+			set;
+		}
 		public string SupplerendeBynavn
 		{
 			get;

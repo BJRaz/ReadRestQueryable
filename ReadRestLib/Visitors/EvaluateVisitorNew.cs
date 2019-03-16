@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
-using System.Reflection;
-using ReadRestLib.Model;
 
 namespace ReadRestLib.Visitors
 {
@@ -14,16 +10,16 @@ namespace ReadRestLib.Visitors
 
 		public string Query { get { return querystr.ToString(); } }
 
-		public override Expression Visit(Expression exp)
+		public override Expression Visit(Expression node)
 		{
 
-			if (exp.NodeType == ExpressionType.Constant)
+			if (node.NodeType == ExpressionType.Constant)
 			{
-				return Visit(exp);
+				return Visit(node);
 			}
 
-			LambdaExpression l = Expression.Lambda(exp);
-			Delegate d = l.Compile();
+			var l = Expression.Lambda(node);
+			var d = l.Compile();
 			var hest = d.DynamicInvoke(new object[] { });
 
 			return Expression.Constant(hest);

@@ -9,11 +9,6 @@ namespace ReadRestLib
 	{
 		Type typeOfElement;
 
-		public AdgangsAdresseProvider()
-		{
-
-		}
-
 		public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
 		{
 			typeOfElement = typeof(TElement);

@@ -6,7 +6,7 @@ namespace ReadRestLib.Visitors
 
 	class ExpressionTreeModifier<T> : ExpressionVisitor
 	{
-		private IQueryable _queryable;
+		readonly IQueryable _queryable;
 
 		public ExpressionTreeModifier(IQueryable q)
 		{
