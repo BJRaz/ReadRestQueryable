@@ -54,6 +54,8 @@
     <Compile Include="Visitors\ExpressionTreeModifier.cs" />
     <Compile Include="Model\AdgangsAdresse.cs" />
     <Compile Include="Readers\AdgangsAdresseReader.cs" />
+    <Compile Include="Visitors\EvaluateVisitorNew.cs" />
+    <Compile Include="Visitors\EvaluateVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
