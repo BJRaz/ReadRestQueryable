@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ReadXmlApp")]
+[assembly: AssemblyTitle("ReadRestLib")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ReadXmlApp")]
-[assembly: AssemblyCopyright("Copyright © HP 2015")]
+[assembly: AssemblyCompany("BJR")]
+[assembly: AssemblyProduct("ReadRestLib")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("6d34ac3d-790b-4117-ac88-af96c8926568")]
+[assembly: Guid("d6586da0-cb04-4dd7-b85f-1445318ef506")]
 
 // Version information for an assembly consists of the following four values:
 //

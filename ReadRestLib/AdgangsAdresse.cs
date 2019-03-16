@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ReadXmlLib
+namespace ReadRestLib
 {
 	public class AdgangsAdresse
 	{

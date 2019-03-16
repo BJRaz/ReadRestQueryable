@@ -8,7 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Linq.Expressions;
 
-namespace ReadXmlLib
+namespace ReadRestLib
 {
 	public class AdgangsAdresseReader<T> : IEnumerable<T>
     {
@@ -23,22 +23,27 @@ namespace ReadXmlLib
 
         public IEnumerator<T> GetEnumerator()
         {
+			if (query == String.Empty)
+				throw new Exception("QUERY is empty");
 			var requestUrl =  baseUrl + ((query == string.Empty) ? query + "?struktur=flad" : query + "&struktur=flad");
 
 			WebRequest req = WebRequest.Create(requestUrl);
 
-            var contentstream = req.GetResponse().GetResponseStream();
+			using (var contentstream = req.GetResponse().GetResponseStream())
+			{ 
+				using (var sr = new StreamReader(contentstream)) 
+				{ 
+					string result = sr.ReadToEnd();
 
+					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<T>>(result))
+					{
+						yield return item;
+					}
+				}
 
-			var sr = new StreamReader(contentstream);
-			string result = sr.ReadToEnd();
-
-			foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<T[]>(result))
-			{
-				yield return item;
+			
 			}
-
-        }
+		}
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {

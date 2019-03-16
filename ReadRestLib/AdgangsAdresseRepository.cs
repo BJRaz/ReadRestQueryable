@@ -6,7 +6,7 @@ using System.Net;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace ReadXmlLib
+namespace ReadRestLib
 {
     public class AdgangsAdresseRepository<TIn> : IOrderedQueryable<TIn>
     {
