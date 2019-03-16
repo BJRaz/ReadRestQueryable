@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ReadRestLib
+namespace ReadRestLib.Model
 {
 	public class AdgangsAdresse
 	{

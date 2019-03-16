@@ -8,7 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Linq.Expressions;
 
-namespace ReadRestLib
+namespace ReadRestLib.Readers
 {
 	public class AdgangsAdresseReader<T> : IEnumerable<T>
     {

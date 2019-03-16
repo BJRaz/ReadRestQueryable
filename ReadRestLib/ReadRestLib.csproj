@@ -47,16 +47,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdgangsAdresse.cs" />
     <Compile Include="AdgangsAdresseProvider.cs" />
-    <Compile Include="AdgangsAdresseReader.cs" />
     <Compile Include="AdgangsAdresseRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Visitors\QueryVisitor.cs" />
     <Compile Include="Visitors\ExpressionTreeModifier.cs" />
+    <Compile Include="Model\AdgangsAdresse.cs" />
+    <Compile Include="Readers\AdgangsAdresseReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="Readers\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

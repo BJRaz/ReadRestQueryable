@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using ReadRestLib;
+using ReadRestLib.Model;
 
 namespace ReadRestApp
 {
