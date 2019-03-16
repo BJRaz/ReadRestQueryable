@@ -2,7 +2,7 @@
 
 A basic project, using a custom Linq-provider evaluating a linq-query, and to use the result as query-parameters to a rest-service api. 
 
-The api is currently at the public repository https://dawa.aws.dk/adgangsadresser
+The api is currently at the public repository https://dawa.aws.dk/ (adgangsadresser)
 
 Usage:
 
