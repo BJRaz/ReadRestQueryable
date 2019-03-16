@@ -24,3 +24,8 @@ Notice that only the 'inner'-where clause is evaluated to a querystring.
                             select a;
                         
 - resulting in querystring *"?postnr=5220"* - meaning a much slower request, although the response still will be subject to the objective quering by linq ...
+
+### Examples:
+
+Example-program in project *ReadRestApp*
+
