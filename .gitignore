@@ -3,4 +3,5 @@ bin/
 *.swp
 *.userprefs
 packages/
+*.suo
 
