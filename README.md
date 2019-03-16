@@ -13,7 +13,7 @@ Notice that only the 'inner'-where clause is evaluated to a querystring.
 						orderby a.Vejnavn
 						select a;
 			
-- resulting in querystring "?postnr=5220&supplerendebynavn=Fraugde&husnr=6" appended to the rest-api's endpoint.
+- resulting in querystring *"?postnr=5220&supplerendebynavn=Fraugde&husnr=6"* appended to the rest-api's endpoint.
 
 .. and in contrast:
 
@@ -23,4 +23,4 @@ Notice that only the 'inner'-where clause is evaluated to a querystring.
                             orderby a.Vejnavn
                             select a;
                         
-- resulting in querystring "?postnr=5220" - meaning a much slower request, although the response still will be subject to the objective quering by linq ...
+- resulting in querystring *"?postnr=5220"* - meaning a much slower request, although the response still will be subject to the objective quering by linq ...
