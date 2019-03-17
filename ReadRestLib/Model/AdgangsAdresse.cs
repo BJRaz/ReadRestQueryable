@@ -51,45 +51,46 @@
 		}
 	}
 
-public class Adresse
-{
+	public class Adresse
+	{
 
-	public string AdresseBetegnelse
-	{
-		get;
-		set;
+		public string AdresseBetegnelse
+		{
+			get;
+			set;
+		}
+
+		public string Status
+		{
+			get;
+			set;
+		}
+
+		public AdgangsAdresse AdgangsAdresse
+		{
+			get;
+			set;
+		}
 	}
 
-	public string Status
+	public class Postnummer
 	{
-		get;
-		set;
+		public string Href
+		{
+			get;
+			set;
+		}
+		public string Nr
+		{
+			get;
+			set;
+		}
+		public string Navn
+		{
+			get;
+			set;
+		}
 	}
 
-	public AdgangsAdresse AdgangsAdresse
-	{
-		get;
-		set;
-	}
-}
-
-public class Postnummer
-{
-	public string Href
-	{
-		get;
-		set;
-	}
-	public string Nr
-	{
-		get;
-		set;
-	}
-	public string Navn
-	{
-		get;
-		set;
-	}	}
-	
 }
 

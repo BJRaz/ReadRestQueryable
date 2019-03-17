@@ -24,8 +24,11 @@ namespace ReadRestLib.Visitors
 
 		public string Evaluate()
 		{
-			var evaluator = new EvaluateVisitor();
-			evaluator.Visit(innerWhereExpression);
+			var evaluator = new EvaluateVisitorNew();
+
+			var bottomUp = Evaluator.PartialEval(innerWhereExpression);
+
+			evaluator.Visit(bottomUp);
 			Console.WriteLine(evaluator.Query);
 			return evaluator.Query;
 		}

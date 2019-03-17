@@ -36,6 +36,43 @@ namespace TestReadXML
 		}
 
 		[Test()]
+		public void TestWhereWithBinaryAndExpressionPostnrAsVariable()
+		{
+			// assign
+			var postnr = 5000;
+			var query = (from x in new AdgangsAdresseRepository<AdgangsAdresse>()
+			             where x.HusNr == "10" && x.Postnr == postnr.ToString()
+						 select x).AsQueryable();
+
+			// act
+			var q = new QueryVisitor();
+			q.Visit(query.Expression);
+
+			// assert
+			var querystring = q.Evaluate();
+			Assert.IsNotEmpty(querystring);
+			Assert.AreEqual("?husnr=10&postnr=5000", querystring);
+		}
+
+		[Test()]
+		public void TestWhereWithBinaryAndExpressionPostnrAscalculation()
+		{
+			// assign
+			var query = (from x in new AdgangsAdresseRepository<AdgangsAdresse>()
+			             where x.HusNr ==  "10" && x.Postnr == (5000 + 200).ToString()
+						 select x).AsQueryable();
+
+			// act
+			var q = new QueryVisitor();
+			q.Visit(query.Expression);
+
+			// assert
+			var querystring = q.Evaluate();
+			Assert.IsNotEmpty(querystring);
+			Assert.AreEqual("?husnr=10&postnr=5200", querystring);
+		}
+
+		[Test()]
 		public void TestDoubleWhere()
 		{
 			// assign
