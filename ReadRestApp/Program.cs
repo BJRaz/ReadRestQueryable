@@ -12,9 +12,10 @@ namespace ReadRestApp
 			Console.WriteLine("Henter adresser");
 			int x = 5220;
 
+
+
 			var items = from a in new AdgangsAdresseRepository<AdgangsAdresse>()
-						where a.Postnr == x.ToString()
-						where a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
+						where a.Postnr == x.ToString() && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
 						orderby a.Vejnavn
 						select a;
 			var i = 1;

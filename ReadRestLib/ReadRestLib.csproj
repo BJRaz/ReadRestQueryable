@@ -57,6 +57,7 @@
     <Compile Include="Readers\AdgangsAdresseReader.cs" />
     <Compile Include="Visitors\EvaluateVisitorNew.cs" />
     <Compile Include="Visitors\EvaluateVisitor.cs" />
+    <Compile Include="Visitors\Evaluator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
