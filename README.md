@@ -9,7 +9,7 @@ Usage:
 Notice that only the 'inner'-where clause is evaluated to a querystring.
 
     var items = from a in new AdgangsAdresseRepository<AdgangsAdresse>()
-						where a.Postnr == x.ToString() && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
+						where a.Postnr == "5220" && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
 						orderby a.Vejnavn
 						select a;
 			
@@ -18,7 +18,7 @@ Notice that only the 'inner'-where clause is evaluated to a querystring.
 .. and in contrast:
 
     var items = from a in new AdgangsAdresseRepository<AdgangsAdresse>()
-                            where a.Postnr == x.ToString()
+                            where a.Postnr == "5220"
                             where a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
                             orderby a.Vejnavn
                             select a;
