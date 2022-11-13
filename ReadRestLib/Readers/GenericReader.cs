@@ -2,21 +2,26 @@
 using System.Collections.Generic;
 using System.Net;
 using System.IO;
+using System.Linq;
 
 namespace ReadRestLib.Readers
 {
-	public class AdgangsAdresseReader : IEnumerable<Model.AdgangsAdresse>
+	public class GenericReader<TIn> : IEnumerable<TIn>
 	{
 		string query;
 		string baseUrl;
 
-		public AdgangsAdresseReader(string query)
+		public GenericReader(string query)
 		{
 			this.query = query;
-			baseUrl = @"https://dawa.aws.dk/adgangsadresser";
+            Type intype = typeof(TIn);
+            var attr = (Attributes.BaseUrlAttribute)Attribute.GetCustomAttribute(intype, typeof(Attributes.BaseUrlAttribute));
+
+            this.baseUrl = attr.BaseUrl;
+
 		}
 
-		public IEnumerator<Model.AdgangsAdresse> GetEnumerator()
+		public IEnumerator<TIn> GetEnumerator()
 		{
 			if (query == string.Empty)
 				throw new Exception("QUERY is empty");
@@ -29,15 +34,17 @@ namespace ReadRestLib.Readers
 				using (var sr = new StreamReader(contentstream))
 				{
 					var result = sr.ReadToEnd();
-
-					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
+                    var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
+#if DEBUG
+                    Console.WriteLine("Records found: " + collection.Count());
+#endif
+                    foreach (var item in collection)
 					{
 						yield return item;
 					}
 				}
-
-
 			}
+
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

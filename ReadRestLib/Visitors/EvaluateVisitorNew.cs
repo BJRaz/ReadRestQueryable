@@ -36,21 +36,22 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (node.Member.DeclaringType == typeof(Postnummer))
-			{
-				var mname = node.Member.Name.ToLower();
-				if (mname == "nr")
-					return Expression.Constant("postnr");
-				return Expression.Constant(mname);
-			}
-			if (node.Member.DeclaringType == typeof(AdgangsAdresse))
-			{
-				var mname = node.Member.Name.ToLower();
-				if (mname == "husnr")
-					return Expression.Constant("husnr");
-				return Expression.Constant(mname);
-			}
-			return base.VisitMember(node);
+            if (node.Member.DeclaringType == typeof(Postnummer))
+            {
+                var mname = node.Member.Name.ToLower();
+                //if (mname == "nr")
+                //    return Expression.Constant("postnr");
+                return Expression.Constant(mname);
+            }
+            if (node.Member.DeclaringType == typeof(AdgangsAdresse))
+            {
+                var mname = node.Member.Name.ToLower();
+                if (mname == "husnr")
+                    return Expression.Constant("husnr");
+                return Expression.Constant(mname);
+            }
+
+            return base.VisitMember(node);
 		}
 
 		protected override Expression VisitBinary(BinaryExpression node)

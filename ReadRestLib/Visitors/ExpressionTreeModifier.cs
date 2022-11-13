@@ -15,7 +15,7 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitConstant(ConstantExpression node)
 		{
-			if (node.Type == typeof(AdgangsAdresseRepository<T>))
+			if (node.Type == typeof(DAWARepository<T>))
 				return Expression.Constant(_queryable);     // this exchanges AdgangsAdresseRepository 
 			return node;
 		}

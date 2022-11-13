@@ -3,21 +3,21 @@ using System.Linq;
 using ReadRestLib.Visitors;
 using ReadRestLib.Readers;
 
-namespace ReadRestLib
+namespace ReadRestLib.Providers
 {
-	public class AdgangsAdresseProvider : IQueryProvider
+	public class GenericProvider : IQueryProvider
 	{
 		Type typeOfElement;
 
 		public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
 		{
 			typeOfElement = typeof(TElement);
-			return new AdgangsAdresseRepository<TElement>(this, expression);
+			return new DAWARepository<TElement>(this, expression);
 		}
 
 		public IQueryable CreateQuery(System.Linq.Expressions.Expression expression)
 		{
-			return (IQueryable)Activator.CreateInstance(typeof(AdgangsAdresseRepository<>).MakeGenericType(expression.Type), new object[] { this, expression });
+			return (IQueryable)Activator.CreateInstance(typeof(DAWARepository<>).MakeGenericType(expression.Type), new object[] { this, expression });
 		}
 
 		public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
@@ -56,7 +56,7 @@ namespace ReadRestLib
 			var v = new QueryVisitor();
 			v.Visit(expression);
 
-			var reader = new AdgangsAdresseReader<TResult>(v.Evaluate());
+			var reader = new GenericReader<TResult>(v.Evaluate());
 			return reader.AsQueryable();
 		}
 

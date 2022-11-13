@@ -5,20 +5,20 @@ using System.Linq.Expressions;
 
 namespace ReadRestLib
 {
-	public class AdgangsAdresseRepository<TIn> : IOrderedQueryable<TIn>
+	public class DAWARepository<TIn> : IOrderedQueryable<TIn>
 	{
 		readonly IQueryProvider _provider;
 		Expression _expression;
 
-		public AdgangsAdresseRepository()
+		public DAWARepository()
 		{
-			_provider = new AdgangsAdresseProvider();
+			_provider = new Providers.GenericProvider();
 			_expression = Expression.Constant(this);
 		}
 
-		public AdgangsAdresseRepository(IQueryProvider provider, Expression expression)
+		public DAWARepository(IQueryProvider provider, Expression expression)
 		{
-			_provider = provider as AdgangsAdresseProvider;
+			_provider = provider;
 			_expression = expression;
 		}
 

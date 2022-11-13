@@ -1,6 +1,9 @@
-﻿namespace ReadRestLib.Model
+﻿using ReadRestLib.Attributes;
+
+namespace ReadRestLib.Model
 {
-	public class AdgangsAdresse
+    [BaseUrl(@"https://dawa.aws.dk/adgangsadresser")]
+    public class AdgangsAdresse
 	{
 
 		public string ID
@@ -45,47 +48,6 @@
 			set;
 		}
 		public string SupplerendeBynavn
-		{
-			get;
-			set;
-		}
-	}
-
-	public class Adresse
-	{
-
-		public string AdresseBetegnelse
-		{
-			get;
-			set;
-		}
-
-		public string Status
-		{
-			get;
-			set;
-		}
-
-		public AdgangsAdresse AdgangsAdresse
-		{
-			get;
-			set;
-		}
-	}
-
-	public class Postnummer
-	{
-		public string Href
-		{
-			get;
-			set;
-		}
-		public string Nr
-		{
-			get;
-			set;
-		}
-		public string Navn
 		{
 			get;
 			set;

@@ -5,18 +5,18 @@ using System.IO;
 
 namespace ReadRestLib.Readers
 {
-	public class AdgangsAdresseReader : IEnumerable<Model.AdgangsAdresse>
+	public class PostnummerReader : IEnumerable<Model.Postnummer>
 	{
 		string query;
 		string baseUrl;
 
-		public AdgangsAdresseReader(string query)
+		public PostnummerReader(string query)
 		{
 			this.query = query;
-			baseUrl = @"https://dawa.aws.dk/adgangsadresser";
+			baseUrl = @"https://dawa.aws.dk/postnumre";
 		}
 
-		public IEnumerator<Model.AdgangsAdresse> GetEnumerator()
+		public IEnumerator<Model.Postnummer> GetEnumerator()
 		{
 			if (query == string.Empty)
 				throw new Exception("QUERY is empty");
@@ -30,14 +30,13 @@ namespace ReadRestLib.Readers
 				{
 					var result = sr.ReadToEnd();
 
-					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
+					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
 					{
 						yield return item;
 					}
 				}
-
-
 			}
+
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
