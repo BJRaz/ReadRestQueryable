@@ -2,7 +2,7 @@
 using System.Linq;
 using Moq;
 
-namespace TestReadXML
+namespace ReadRestLib.Tests
 {
 	public class TestQueryProvider : IQueryProvider
 	{

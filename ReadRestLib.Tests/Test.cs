@@ -13,7 +13,7 @@ using Moq;
 using ReadRestLib.Readers;
 using System.Linq.Expressions;
 
-namespace TestReadXML
+namespace ReadRestLib.Tests
 {
 	[TestFixture()]
 	public class Test
@@ -121,7 +121,7 @@ namespace TestReadXML
 		[Test]
 		public void StreamTest()
 		{
-			WebRequest req = WebRequest.Create(@"http://dawa.aws.dk/adresser?q=Holmehus*");
+			WebRequest req = WebRequest.Create(@"https://dawa.aws.dk/adresser?q=Holmehus*");
 
 			var contentstream = req.GetResponse().GetResponseStream();
 
