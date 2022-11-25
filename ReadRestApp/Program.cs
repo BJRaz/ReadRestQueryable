@@ -14,12 +14,12 @@ namespace ReadRestApp
 
 
 
-            var items = from a in new DAWARepository<Postnummer>()
-                        where a.Nr == "7300"
-                        select a;
-            //where a.Postnr == x.ToString() && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
-            //orderby a.Vejnavn
-            //select a;
+            var items = from a in new DAWARepository<AdgangsAdresse>()
+                        // where a.Nr == "5540"
+                        // select a;
+				where a.Postnr == x.ToString() && a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
+				orderby a.Vejnavn
+				select a;
             var i = 1;
 			foreach (var item in items)
 			{
