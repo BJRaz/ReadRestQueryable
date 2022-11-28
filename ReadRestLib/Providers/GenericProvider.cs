@@ -9,9 +9,12 @@ namespace ReadRestLib.Providers
 	{
 		Type typeOfElement;
 
+		public GenericProvider(Type type)
+		{
+			typeOfElement = type;
+		}
 		public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
 		{
-			typeOfElement = typeof(TElement);
 			return new DAWARepository<TElement>(this, expression);
 		}
 
@@ -22,13 +25,7 @@ namespace ReadRestLib.Providers
 
 		public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
 		{
-
-			var o = Execute(expression);
-
-			var result = (TResult)o; // cast to IEnumerable<T>
-
-			return result;
-
+			return (TResult)Execute(expression);
 		}
 
 		public object Execute(System.Linq.Expressions.Expression expression)
@@ -44,8 +41,8 @@ namespace ReadRestLib.Providers
 
 			var expressiontreemodifier = methodExp.Invoke(this, new object[] { queryable }) as System.Linq.Expressions.ExpressionVisitor;
 
-			// changes the AdgangAdresseProvider in expression to 
-			var modifiedTree = expressiontreemodifier.Visit(expression);            // AdgangAdresseReader
+			
+			var modifiedTree = expressiontreemodifier.Visit(expression);            
 
 			return provider.CreateQuery(modifiedTree);                              // create an Executable query from modifiedTree
 

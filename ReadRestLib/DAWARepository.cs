@@ -12,7 +12,7 @@ namespace ReadRestLib
 
 		public DAWARepository()
 		{
-			_provider = new Providers.GenericProvider();
+			_provider = new Providers.GenericProvider(typeof(TIn));
 			_expression = Expression.Constant(this);
 		}
 

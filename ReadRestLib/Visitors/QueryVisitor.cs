@@ -14,6 +14,15 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
+			if(node.Method.Name == "Join") {
+				var q = new QueryVisitor();
+				var result = q.Visit(node.Arguments[2]);
+				var evaluator = new EvaluateVisitorNew();
+
+				evaluator.Visit(Evaluator.PartialEval(node.Arguments[0]));
+
+				System.Console.WriteLine(evaluator.Query);
+			}
 			if (node.Method.Name == "Where")
 				innerWhereExpression = node;
 
@@ -29,7 +38,6 @@ namespace ReadRestLib.Visitors
 			var bottomUp = Evaluator.PartialEval(innerWhereExpression);
 
 			evaluator.Visit(bottomUp);
-			Console.WriteLine(evaluator.Query);
 			return evaluator.Query;
 		}
 	}

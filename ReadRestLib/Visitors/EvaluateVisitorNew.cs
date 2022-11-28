@@ -16,7 +16,6 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitLambda<T>(Expression<T> node)
 		{
-			querystr.Append("?");
 			Visit(node.Body);
 			return node;
 		}
