@@ -13,30 +13,27 @@ namespace ReadRestLib.Readers
 		public AdgangsAdresseReader(string query)
 		{
 			this.query = query;
-			baseUrl = @"https://dawa.aws.dk/adgangsadresser";
+			baseUrl = "https://api.dataforsyningen.dk/adgangsadresser";	//@"https://dawa.aws.dk/adgangsadresser";
 		}
 
 		public IEnumerator<Model.AdgangsAdresse> GetEnumerator()
 		{
-			if (query == string.Empty)
+			if (string.IsNullOrWhiteSpace(query))
 				throw new Exception("QUERY is empty");
-			var requestUrl = baseUrl + ((query == string.Empty) ? query + "?struktur=flad" : query + "&struktur=flad");
+			var requestUrl = baseUrl + query + (query.Contains("?") ? "&struktur=flad" : "?struktur=flad");
 
-			var req = WebRequest.Create(requestUrl);
-
-			using (var contentstream = req.GetResponse().GetResponseStream())
+			using (var httpClient = new System.Net.Http.HttpClient())
 			{
-				using (var sr = new StreamReader(contentstream))
+				var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
+				if (!response.IsSuccessStatusCode)
+					yield break;
+
+				var result = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+				foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
 				{
-					var result = sr.ReadToEnd();
-
-					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
-					{
-						yield return item;
-					}
+					yield return item;
 				}
-
-
 			}
 		}
 

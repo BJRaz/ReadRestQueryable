@@ -13,30 +13,27 @@ namespace ReadRestLib.Readers
 		public PostnummerReader(string query)
 		{
 			this.query = query;
-			baseUrl = @"https://dawa.aws.dk/postnumre";
+			baseUrl = @"https://api.dataforsyningen.dk/postnumre";
 		}
 
 		public IEnumerator<Model.Postnummer> GetEnumerator()
 		{
-			if (query == string.Empty)
+			if (string.IsNullOrEmpty(query))
 				throw new Exception("QUERY is empty");
-			var requestUrl = baseUrl + ((query == string.Empty) ? query + "?struktur=flad" : query + "&struktur=flad");
 
-			var req = WebRequest.Create(requestUrl);
+			var requestUrl = baseUrl + (query.StartsWith("?") ? query + "&struktur=flad" : "?" + query + "&struktur=flad");
 
-			using (var contentstream = req.GetResponse().GetResponseStream())
+			using (var httpClient = new System.Net.Http.HttpClient())
 			{
-				using (var sr = new StreamReader(contentstream))
-				{
-					var result = sr.ReadToEnd();
+				var response = httpClient.GetAsync(requestUrl).Result;
+				response.EnsureSuccessStatusCode();
+				var result = response.Content.ReadAsStringAsync().Result;
 
-					foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
-					{
-						yield return item;
-					}
+				foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
+				{
+					yield return item;
 				}
 			}
-
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

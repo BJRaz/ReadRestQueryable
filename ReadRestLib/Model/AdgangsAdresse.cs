@@ -2,7 +2,7 @@
 
 namespace ReadRestLib.Model
 {
-    [BaseUrl(@"https://dawa.aws.dk/adgangsadresser")]
+    [BaseUrl(@"https://api.dataforsyningen.dk/adgangsadresser")]
     public class AdgangsAdresse
     {
 

@@ -29,21 +29,18 @@ namespace ReadRestLib.Readers
 #if DEBUG
 			System.Console.WriteLine("QUERY => " + requestUrl);
 #endif
-			var req = WebRequest.Create(requestUrl);
-
-			using (var contentstream = req.GetResponse().GetResponseStream())
+			using (var httpClient = new System.Net.Http.HttpClient())
 			{
-				using (var sr = new StreamReader(contentstream))
-				{
-					var result = sr.ReadToEnd();
-                    var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
+				var response = httpClient.GetAsync(requestUrl).Result;
+				response.EnsureSuccessStatusCode();
+				var result = response.Content.ReadAsStringAsync().Result;
+				var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
 #if DEBUG
-                    Console.WriteLine("Records found: " + collection.Count());
+				Console.WriteLine("Records found: " + collection.Count());
 #endif
-                    foreach (var item in collection)
-					{
-						yield return item;
-					}
+				foreach (var item in collection)
+				{
+					yield return item;
 				}
 			}
 

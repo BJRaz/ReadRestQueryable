@@ -3,7 +3,7 @@ using ReadRestLib.Attributes;
 
 namespace ReadRestLib.Model
 {
-    [BaseUrl(@"https://dawa.aws.dk/postnumre")]
+    [BaseUrl(@"https://api.dataforsyningen.dk/postnumre")]
     public class Postnummer
     {
         public string Href

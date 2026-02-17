@@ -121,7 +121,7 @@ namespace ReadRestLib.Tests
 		[Test]
 		public void StreamTest()
 		{
-			WebRequest req = WebRequest.Create(@"https://dawa.aws.dk/adresser?q=Holmehus*");
+			WebRequest req = WebRequest.Create(@"https://api.dataforsyningen.dk/adresser?q=Holmehus*");
 
 			var contentstream = req.GetResponse().GetResponseStream();
 
