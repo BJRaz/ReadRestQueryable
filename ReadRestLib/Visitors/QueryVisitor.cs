@@ -38,7 +38,8 @@ namespace ReadRestLib.Visitors
 			var bottomUp = Evaluator.PartialEval(innerWhereExpression);
 
 			evaluator.Visit(bottomUp);
-			return evaluator.Query;
+			var query = evaluator.Query;
+			return string.IsNullOrEmpty(query) ? string.Empty : "?" + query;
 		}
 	}
 }

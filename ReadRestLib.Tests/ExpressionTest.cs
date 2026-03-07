@@ -1,22 +1,15 @@
 ﻿using NUnit.Framework;
-using System;
 using System.Linq;
-using System.Collections.Generic;
-using System.Net;
-using System.IO;
-using Newtonsoft.Json;
-using ReadRestLib;
 using ReadRestLib.Model;
 using ReadRestLib.Visitors;
 
 using Moq;
-using ReadRestLib.Readers;
 using System.Linq.Expressions;
 
 namespace ReadRestLib.Tests
 {
-	[TestFixture()]
-	public class Test
+    [TestFixture()]
+	public class ExpressionTest
 	{
 		[Test()]
 		public void TestWhereWithBinaryAndExpression()
@@ -118,24 +111,7 @@ namespace ReadRestLib.Tests
 
 		}
 
-		[Test]
-		public void StreamTest()
-		{
-			WebRequest req = WebRequest.Create(@"https://api.dataforsyningen.dk/adresser?q=Holmehus*");
-
-			var contentstream = req.GetResponse().GetResponseStream();
-
-			var obj = JsonConvert.DeserializeObject<IEnumerable<Adresse>>(new StreamReader(contentstream).ReadToEnd());
-
-			Assert.IsNotNull(obj);
-
-			foreach (var o in obj)
-			{
-				Console.WriteLine(o.AdresseBetegnelse);
-			}
-
-		}
-
+		
 	}
 }
 
