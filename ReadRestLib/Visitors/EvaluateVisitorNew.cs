@@ -24,7 +24,9 @@ namespace ReadRestLib.Visitors
 		{
 			get
 			{
-				return querystr.ToString();
+				string result = querystr.ToString();
+				// Clean up any leading or trailing ampersands
+				return result.TrimStart('&').TrimEnd('&');
 			}
 		}
 
