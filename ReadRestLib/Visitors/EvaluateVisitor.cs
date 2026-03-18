@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq.Expressions;
 using System.Reflection;
 using ReadRestLib.Model;
+using ReadRestLib.Utilities;
 
 namespace ReadRestLib.Visitors
 {
@@ -55,15 +56,15 @@ namespace ReadRestLib.Visitors
 						var memberInfo = memberInfos.Pop();
 						if (memberInfo.MemberType == MemberTypes.Property)
 						{
-							objref = objref.GetType().GetProperty(memberInfo.Name).GetValue(objref, null);
+							var propertyInfo = ReflectionCache.GetProperty(objref.GetType(), memberInfo.Name);
+							if (propertyInfo != null)
+								objref = propertyInfo.GetValue(objref, null);
 						}
 						else if (memberInfo.MemberType == MemberTypes.Field)
 						{
-							var fieldInfo = objref.GetType()
-								.GetField(memberInfo.Name,
-									BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-							if (
-								fieldInfo != null)
+							var fieldInfo = ReflectionCache.GetField(objref.GetType(), memberInfo.Name,
+								BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+							if (fieldInfo != null)
 								objref = fieldInfo.GetValue(objref);
 						}
 					}
@@ -73,7 +74,7 @@ namespace ReadRestLib.Visitors
 
 				if (parameter != null)
 				{
-					var propertyinfo = parameter.Type.GetProperty(memberInfos.Pop().Name);
+					var propertyinfo = ReflectionCache.GetProperty(parameter.Type, memberInfos.Pop().Name);
 					//if (pi != null)
 					//{
 					//	var fatt = (FieldNameAttribute)Attribute.GetCustomAttribute(pi, typeof(FieldNameAttribute));
@@ -109,24 +110,24 @@ namespace ReadRestLib.Visitors
 			}
 			else
 			{
-				if (node.Member.MemberType == MemberTypes.Property)
+			if (node.Member.MemberType == MemberTypes.Property)
+			{
+				if (node.Member.DeclaringType != null)
 				{
-					if (node.Member.DeclaringType != null)
-					{
-						var propertyinfo = node.Member.DeclaringType.GetProperty(node.Member.Name);
+					var propertyinfo = ReflectionCache.GetProperty(node.Member.DeclaringType, node.Member.Name);
+					if (propertyinfo != null)
 						objref = propertyinfo.GetValue(null, null);
-					}
-
 				}
-				else if (node.Member.MemberType == MemberTypes.Field)
+
+			}
+			else if (node.Member.MemberType == MemberTypes.Field)
+			{
+				if (node.Member.DeclaringType != null)
 				{
-					if (node.Member.DeclaringType != null)
-					{
-						var fieldinfo = node.Member.DeclaringType.GetField(node.Member.Name);
+					var fieldinfo = ReflectionCache.GetField(node.Member.DeclaringType, node.Member.Name);
+					if (fieldinfo != null)
 						objref = fieldinfo.GetValue(null);
-					}
-
-				}
+				}				}
 				else
 					throw new Exception("Cant access member of type: " + node.Member.MemberType);
 			}
