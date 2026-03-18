@@ -29,20 +29,38 @@ namespace ReadRestLib.Readers
 #if DEBUG
 			System.Console.WriteLine("QUERY => " + requestUrl);
 #endif
-			using (var httpClient = new System.Net.Http.HttpClient())
+
+			var request = WebRequest.Create(requestUrl);
+			request.Method = "GET";
+			using (var response = request.GetResponse())				
 			{
-				var response = httpClient.GetAsync(requestUrl).Result;
-				response.EnsureSuccessStatusCode();
-				var result = response.Content.ReadAsStringAsync().Result;
-				var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
-#if DEBUG
-				Console.WriteLine("Records found: " + collection.Count());
-#endif
-				foreach (var item in collection)
+				using (var stream = response.GetResponseStream())
 				{
-					yield return item;
+					using (var reader = new StreamReader(stream))
+					{
+						var result = reader.ReadToEnd();
+						foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result))
+						{
+							yield return item;
+						}
+					}
 				}
 			}
+
+// 			using (var httpClient = new System.Net.Http.HttpClient())
+// 			{
+// 				var response = httpClient.GetAsync(requestUrl).Result;
+// 				response.EnsureSuccessStatusCode();
+// 				var result = response.Content.ReadAsStringAsync().Result;
+// 				var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
+// #if DEBUG
+// 				Console.WriteLine("Records found: " + collection.Count());
+// #endif
+// 				foreach (var item in collection)
+// 				{
+// 					yield return item;
+// 				}
+// 			}
 
 		}
 

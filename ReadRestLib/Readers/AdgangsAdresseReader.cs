@@ -22,19 +22,37 @@ namespace ReadRestLib.Readers
 				throw new Exception("QUERY is empty");
 			var requestUrl = baseUrl + query + (query.Contains("?") ? "&struktur=flad" : "?struktur=flad");
 
-			using (var httpClient = new System.Net.Http.HttpClient())
-			{
-				var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
-				if (!response.IsSuccessStatusCode)
-					yield break;
 
-				var result = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-				foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
+				var request = WebRequest.Create(requestUrl);
+				request.Method = "GET";
+				using (var response = request.GetResponse())
 				{
-					yield return item;
-				}
-			}
+					using (var stream = response.GetResponseStream())
+					{
+						using (var reader = new StreamReader(stream))
+						{
+							var result = reader.ReadToEnd();
+							foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
+							{
+								yield return item;
+							}
+						}
+					}
+				}				
+
+			// using (var httpClient = new HttpClient())
+			// {
+			// 	var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
+			// 	if (!response.IsSuccessStatusCode)
+			// 		yield break;
+
+			// 	var result = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+			// 	foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
+			// 	{
+			// 		yield return item;
+			// 	}
+			// }
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

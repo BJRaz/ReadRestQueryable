@@ -2,11 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks> <!-- Use net48 for .NET 4.8 -->
+    <TargetFrameworks>net48</TargetFrameworks> <!-- Use net48 for .NET 4.8 -->
     <OutputType>Exe</OutputType>
     <RootNamespace>ReadRestApp</RootNamespace>
     <AssemblyName>ReadRestApp</AssemblyName>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

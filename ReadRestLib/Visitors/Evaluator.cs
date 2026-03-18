@@ -42,7 +42,20 @@ namespace ReadRestLib.Visitors
 		/// <returns>A new tree with sub-trees evaluated and replaced.</returns> 
 		public static Expression PartialEval(Expression expression, Func<Expression, bool> fnCanBeEvaluated)
 		{
-			return new SubtreeEvaluator(new Nominator(fnCanBeEvaluated).Nominate(expression)).Eval(expression);
+			if (expression == null) return null;
+			var nominator = new Nominator(fnCanBeEvaluated);
+			// If the root is a lambda, evaluate its body and return a LambdaExpression
+			if (expression is LambdaExpression lambda)
+			{
+				var candidates = nominator.Nominate(lambda.Body);
+				var newBody = new SubtreeEvaluator(candidates).Eval(lambda.Body);
+				return Expression.Lambda(newBody, lambda.Parameters);
+			}
+			else
+			{
+				var candidates = nominator.Nominate(expression);
+				return new SubtreeEvaluator(candidates).Eval(expression);
+			}
 		}
 
 		/// <summary> 

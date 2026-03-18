@@ -1,3 +1,4 @@
 {
-    "omnisharp.useModernNet": true
+    "omnisharp.loggingLevel": "information",
+    "omnisharp.useGlobalMono": "never"
 }

@@ -23,17 +23,34 @@ namespace ReadRestLib.Readers
 
 			var requestUrl = baseUrl + (query.StartsWith("?") ? query + "&struktur=flad" : "?" + query + "&struktur=flad");
 
-			using (var httpClient = new System.Net.Http.HttpClient())
-			{
-				var response = httpClient.GetAsync(requestUrl).Result;
-				response.EnsureSuccessStatusCode();
-				var result = response.Content.ReadAsStringAsync().Result;
-
-				foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
+				var request = WebRequest.Create(requestUrl);
+				request.Method = "GET";
+				using (var response = request.GetResponse())
 				{
-					yield return item;
+					using (var stream = response.GetResponseStream())
+					{
+						using (var reader = new StreamReader(stream))
+						{
+							var result = reader.ReadToEnd();
+							foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
+							{
+								yield return item;
+							}
+						}
+					}
 				}
-			}
+
+			// using (var httpClient = new System.Net.Http.HttpClient())
+			// {
+			// 	var response = httpClient.GetAsync(requestUrl).Result;
+			// 	response.EnsureSuccessStatusCode();
+			// 	var result = response.Content.ReadAsStringAsync().Result;
+
+			// 	foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.Postnummer>>(result))
+			// 	{
+			// 		yield return item;
+			// 	}
+			// }
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

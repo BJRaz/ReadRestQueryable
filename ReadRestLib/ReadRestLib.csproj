@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks> <!-- Use net462 for .NET 4.6.2 -->
+    <TargetFrameworks>net48</TargetFrameworks> <!-- Use net462 for .NET 4.6.2 -->
     <OutputType>Library</OutputType>
     <RootNamespace>ReadRestLib</RootNamespace>
     <AssemblyName>ReadRestLib</AssemblyName>

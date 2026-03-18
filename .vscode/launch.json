@@ -1,24 +1,15 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": ".NET Core Launch (console)",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/ReadRestApp/bin/Debug/net6.0/ReadRestApp.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/ReadRestApp",
-            "console": "internalConsole",
-            "stopAtEntry": false
-        },
-        {
-            "name": ".NET Core Attach",
-            "type": "coreclr",
-            "request": "attach"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch ReadRestApp (Mono .NET Framework)",
+      "type": "mono",
+      "request": "launch",
+      "program": "${workspaceFolder}/ReadRestApp/bin/Debug/net48/ReadRestApp.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/ReadRestApp",
+      "preLaunchTask": "build",
+      "console": "integratedTerminal"
+    }
+  ]
 }
