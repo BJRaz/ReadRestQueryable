@@ -17,6 +17,24 @@
                 "reveal": "silent"
             },
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "test",
+            "command": "sh",
+            "type": "shell",
+            "args": [
+                "-c",
+                "mcs TestRunner.cs -target:exe -out:TestRunner.exe && mono TestRunner.exe"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
         }
     ]
 }
