@@ -1,58 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
-using System.IO;
+using System.Linq;
 
 namespace ReadRestLib.Readers
 {
+	/// <summary>
+	/// Reader for AdgangsAdresse (Address) data from the DAWA REST API.
+	/// Delegates to GenericReader for actual HTTP operations.
+	/// </summary>
 	public class AdgangsAdresseReader : IEnumerable<Model.AdgangsAdresse>
 	{
-		string query;
-		string baseUrl;
+		private readonly GenericReader<Model.AdgangsAdresse> _genericReader;
 
 		public AdgangsAdresseReader(string query)
 		{
-			this.query = query;
-			baseUrl = "https://api.dataforsyningen.dk/adgangsadresser";	//@"https://dawa.aws.dk/adgangsadresser";
+			ValidateQuery(query);
+			_genericReader = new GenericReader<Model.AdgangsAdresse>(BuildQuery(query));
 		}
 
 		public IEnumerator<Model.AdgangsAdresse> GetEnumerator()
 		{
-			if (string.IsNullOrWhiteSpace(query))
-				throw new Exception("QUERY is empty");
-			var requestUrl = baseUrl + query + (query.Contains("?") ? "&struktur=flad" : "?struktur=flad");
-
-
-				var request = WebRequest.Create(requestUrl);
-				request.Method = "GET";
-				using (var response = request.GetResponse())
-				{
-					using (var stream = response.GetResponseStream())
-					{
-						using (var reader = new StreamReader(stream))
-						{
-							var result = reader.ReadToEnd();
-							foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
-							{
-								yield return item;
-							}
-						}
-					}
-				}				
-
-			// using (var httpClient = new HttpClient())
-			// {
-			// 	var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
-			// 	if (!response.IsSuccessStatusCode)
-			// 		yield break;
-
-			// 	var result = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-			// 	foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<Model.AdgangsAdresse>>(result))
-			// 	{
-			// 		yield return item;
-			// 	}
-			// }
+			return _genericReader.GetEnumerator();
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -60,5 +28,17 @@ namespace ReadRestLib.Readers
 			return GetEnumerator();
 		}
 
+		private static void ValidateQuery(string query)
+		{
+			if (string.IsNullOrWhiteSpace(query))
+				throw new ArgumentException("Query cannot be null or empty.", nameof(query));
+		}
+
+		private static string BuildQuery(string query)
+		{
+			// Append flad structure parameter
+			var separator = query.Contains("?") ? "&" : "?";
+			return $"{query}{separator}struktur=flad";
+		}
 	}
 }

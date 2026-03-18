@@ -4,5 +4,6 @@ bin/
 *.userprefs
 packages/
 *.suo
+*.exe
 
 TestResult.xml

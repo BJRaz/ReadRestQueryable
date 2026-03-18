@@ -14,14 +14,14 @@ namespace ReadRestLib.Tests
     {
         private const string ApiUrl = @"https://api.dataforsyningen.dk/adresser?q=Holmehus*";
 
-        // [Test]
-        // public void StreamTest()
-        // {
-        //     var obj = FetchAddresses(ApiUrl);
+        [Test]
+        public void StreamTest()
+        {
+            var obj = FetchAddresses(ApiUrl);
 
-        //     Assert.IsNotNull(obj);
-        //     PrintAddresses(obj);
-        // }
+            Assert.IsNotNull(obj);
+            PrintAddresses(obj);
+        }
 
         private IEnumerable<Adresse> FetchAddresses(string url)
         {

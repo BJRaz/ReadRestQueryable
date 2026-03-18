@@ -1,73 +1,95 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.IO;
 using System.Linq;
+using System.Net;
+using Newtonsoft.Json;
 
 namespace ReadRestLib.Readers
 {
+	/// <summary>
+	/// Generic reader for fetching and deserializing JSON data from REST APIs.
+	/// Uses reflection to get base URL from BaseUrlAttribute on the model type.
+	/// </summary>
 	public class GenericReader<TIn> : IEnumerable<TIn>
 	{
-		string query;
-		string baseUrl;
+		private readonly string _query;
+		private readonly string _baseUrl;
+		private const string DefaultStructure = "mini";
 
 		public GenericReader(string query)
 		{
-			this.query = query;
-            Type intype = typeof(TIn);
-            var attr = (Attributes.BaseUrlAttribute)Attribute.GetCustomAttribute(intype, typeof(Attributes.BaseUrlAttribute));
+			_query = query ?? string.Empty;
+			_baseUrl = GetBaseUrlFromAttribute(typeof(TIn));
+			ValidateConfiguration();
+		}
 
-            this.baseUrl = attr.BaseUrl;
+		private static string GetBaseUrlFromAttribute(Type type)
+		{
+			var attr = (Attributes.BaseUrlAttribute)Attribute.GetCustomAttribute(type, typeof(Attributes.BaseUrlAttribute));
+			if (attr == null)
+				throw new InvalidOperationException($"Type {type.Name} must have a BaseUrlAttribute defined.");
+			return attr.BaseUrl;
+		}
 
+		private void ValidateConfiguration()
+		{
+			if (string.IsNullOrWhiteSpace(_baseUrl))
+				throw new InvalidOperationException("Base URL cannot be null or empty.");
 		}
 
 		public IEnumerator<TIn> GetEnumerator()
 		{
-			// if (query == string.Empty)
-			// 	throw new Exception("QUERY is empty");
-			var requestUrl = baseUrl + "?" + ((query == string.Empty) ? query + "struktur=mini" : query + "&struktur=mini");
-#if DEBUG
-			System.Console.WriteLine("QUERY => " + requestUrl);
-#endif
+			var requestUrl = BuildRequestUrl();
+			LogDebugInfo(requestUrl);
 
+			var items = FetchData(requestUrl);
+			foreach (var item in items)
+			{
+				yield return item;
+			}
+		}
+
+		private IEnumerable<TIn> FetchData(string requestUrl)
+		{
 			var request = WebRequest.Create(requestUrl);
 			request.Method = "GET";
-			using (var response = request.GetResponse())				
+
+			try
 			{
+				using (var response = request.GetResponse())
 				using (var stream = response.GetResponseStream())
+				using (var reader = new StreamReader(stream))
 				{
-					using (var reader = new StreamReader(stream))
-					{
-						var result = reader.ReadToEnd();
-						foreach (var item in Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result))
-						{
-							yield return item;
-						}
-					}
+					var result = reader.ReadToEnd();
+					return JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
 				}
 			}
+			catch (WebException ex)
+			{
+				throw new InvalidOperationException($"Failed to fetch data from {requestUrl}", ex);
+			}
+		}
 
-// 			using (var httpClient = new System.Net.Http.HttpClient())
-// 			{
-// 				var response = httpClient.GetAsync(requestUrl).Result;
-// 				response.EnsureSuccessStatusCode();
-// 				var result = response.Content.ReadAsStringAsync().Result;
-// 				var collection = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<TIn>>(result);
-// #if DEBUG
-// 				Console.WriteLine("Records found: " + collection.Count());
-// #endif
-// 				foreach (var item in collection)
-// 				{
-// 					yield return item;
-// 				}
-// 			}
+		private string BuildRequestUrl()
+		{
+			if (string.IsNullOrEmpty(_query))
+				return $"{_baseUrl}?struktur={DefaultStructure}";
 
+			var separator = _query.StartsWith("?") ? "&" : "?";
+			return $"{_baseUrl}{_query}{separator}struktur={DefaultStructure}";
+		}
+
+		private static void LogDebugInfo(string url)
+		{
+#if DEBUG
+			Console.WriteLine("QUERY => " + url);
+#endif
 		}
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
 		{
 			return GetEnumerator();
 		}
-
 	}
 }
