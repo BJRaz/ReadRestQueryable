@@ -35,29 +35,25 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitMember(MemberExpression node)
 		{
-            if (node.Member.DeclaringType == typeof(Postnummer))
-            {
-                var mname = node.Member.Name.ToLower();
-                //if (mname == "nr")
-                //    return Expression.Constant("postnr");
-                return Expression.Constant(mname);
-            }
-            if (node.Member.DeclaringType == typeof(AdgangsAdresse))
-            {
-                var mname = node.Member.Name.ToLower();
-                if (mname == "husnr")
-                    return Expression.Constant("husnr");
-                return Expression.Constant(mname);
-            }
+			if (node?.Member?.DeclaringType == null)
+				return base.VisitMember(node);
 
-            return base.VisitMember(node);
+			var memberName = node.Member.Name.ToLower();
+
+			if (node.Member.DeclaringType == typeof(Postnummer))
+				return Expression.Constant(memberName);
+
+			if (node.Member.DeclaringType == typeof(AdgangsAdresse))
+				return Expression.Constant(memberName);
+
+			return base.VisitMember(node);
 		}
 
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
-			var l = Visit(node.Left) as ConstantExpression;
-			if (l is ConstantExpression)
-				querystr.Append(l.Value);
+			var leftConstant = Visit(node.Left) as ConstantExpression;
+			if (leftConstant?.Value != null)
+				querystr.Append(leftConstant.Value);
 
 			switch (node.NodeType)
 			{
@@ -69,13 +65,12 @@ namespace ReadRestLib.Visitors
 					querystr.Append("&");
 					break;
 				default:
-					throw new Exception("Operator not supported: " + node.NodeType);
+					throw new InvalidOperationException($"Operator not supported: {node.NodeType}");
 			}
-			var rnode = Visit(node.Right);
 
-			var r = rnode as ConstantExpression;
-			if (r is ConstantExpression)
-				querystr.Append(r.Value);
+			var rightConstant = Visit(node.Right) as ConstantExpression;
+			if (rightConstant?.Value != null)
+				querystr.Append(rightConstant.Value);
 
 			return node;
 		}

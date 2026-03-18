@@ -7,37 +7,37 @@ namespace ReadRestLib.Visitors
 	{
 		MethodCallExpression innerWhereExpression;
 
-		public override Expression Visit(Expression node)
-		{
-			return base.Visit(node);
-		}
-
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
-			if(node.Method.Name == "Join") {
-				var q = new QueryVisitor();
-				var result = q.Visit(node.Arguments[2]);
-				var evaluator = new EvaluateVisitorNew();
+			if (node?.Method == null)
+				return base.VisitMethodCall(node);
 
+			if (node.Method.Name == "Join" && node.Arguments.Count > 2)
+			{
+				var queryVisitor = new QueryVisitor();
+				queryVisitor.Visit(node.Arguments[2]);
+
+				var evaluator = new EvaluateVisitorNew();
 				evaluator.Visit(Evaluator.PartialEval(node.Arguments[0]));
 
-				System.Console.WriteLine(evaluator.Query);
+				Console.WriteLine($"Join Query: {evaluator.Query}");
 			}
+
 			if (node.Method.Name == "Where")
 				innerWhereExpression = node;
 
-			var exp = Visit(node.Arguments[0]);
-
-			return exp;
+			return Visit(node.Arguments[0]);
 		}
 
 		public string Evaluate()
 		{
+			if (innerWhereExpression == null)
+				return string.Empty;
+
 			var evaluator = new EvaluateVisitorNew();
+			var evaluatedExpression = Evaluator.PartialEval(innerWhereExpression);
 
-			var bottomUp = Evaluator.PartialEval(innerWhereExpression);
-
-			evaluator.Visit(bottomUp);
+			evaluator.Visit(evaluatedExpression);
 			var query = evaluator.Query;
 			return string.IsNullOrEmpty(query) ? string.Empty : "?" + query;
 		}

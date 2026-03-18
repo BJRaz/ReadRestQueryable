@@ -8,7 +8,10 @@ using ReadRestLib.Utilities;
 
 namespace ReadRestLib.Visitors
 {
-
+	/// <summary>
+	/// Legacy visitor for evaluating LINQ expressions to query strings.
+	/// Note: EvaluateVisitorNew should be preferred for new code.
+	/// </summary>
 	class EvaluateVisitor : ExpressionVisitor
 	{
 		readonly StringBuilder querystr = new StringBuilder();
@@ -29,129 +32,96 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (node.Member.DeclaringType == typeof(AdgangsAdresse))
+			if (node?.Member?.DeclaringType == typeof(AdgangsAdresse))
 				return Expression.Constant(node.Member.Name.ToLower());
 
-			Expression exp = node;
+			Expression expression = node;
+			var memberStack = new Stack<MemberInfo>();
+			object objectReference = null;
 
-			var memberInfos = new Stack<MemberInfo>();
-			object objref = null;
-			while (exp is MemberExpression)
+			// Unwrap nested member expressions
+			while (expression is MemberExpression memberExpr)
 			{
-				var express = exp as MemberExpression;
-				memberInfos.Push(express.Member);
-				exp = express.Expression;
+				memberStack.Push(memberExpr.Member);
+				expression = memberExpr.Expression;
 			}
-			if (exp != null)
+
+			if (expression != null)
 			{
-				var c = Visit(exp) as ConstantExpression;
-				if (c != null)
+				var constantExpression = Visit(expression) as ConstantExpression;
+				if (constantExpression != null)
 				{
-					//return c; // should be evaluated by universevisitor
+					objectReference = constantExpression.Value;
 
-					objref = c.Value;
-
-					while (memberInfos.Count > 0)
+					// Evaluate member access chain
+					while (memberStack.Count > 0)
 					{
-						var memberInfo = memberInfos.Pop();
-						if (memberInfo.MemberType == MemberTypes.Property)
-						{
-							var propertyInfo = ReflectionCache.GetProperty(objref.GetType(), memberInfo.Name);
-							if (propertyInfo != null)
-								objref = propertyInfo.GetValue(objref, null);
-						}
-						else if (memberInfo.MemberType == MemberTypes.Field)
-						{
-							var fieldInfo = ReflectionCache.GetField(objref.GetType(), memberInfo.Name,
-								BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-							if (fieldInfo != null)
-								objref = fieldInfo.GetValue(objref);
-						}
+						var memberInfo = memberStack.Pop();
+						objectReference = EvaluateMember(memberInfo, objectReference);
 					}
-					return Expression.Constant(objref);
-				}
-				var parameter = exp as ParameterExpression;
 
-				if (parameter != null)
-				{
-					var propertyinfo = ReflectionCache.GetProperty(parameter.Type, memberInfos.Pop().Name);
-					//if (pi != null)
-					//{
-					//	var fatt = (FieldNameAttribute)Attribute.GetCustomAttribute(pi, typeof(FieldNameAttribute));
-					//	if (fatt != null)
-					//	{
-					//		if (fatt.Name == "ID")
-					//		{
-					//			if (memberInfos.Count > 0)
-					//			{
-					//				var m = memberInfos.Pop() as PropertyInfo;
-					//				if (m != null)
-					//				{
-					//					if (m.Name == "Length")
-					//						_sb.Append("LEN");
-					//				}
-					//			}
-					//			else
-					//			{
-					//				_sb.Append("@ID");
-					//			}
-					//		}
-					//		else
-					//		{
-					//			objref = fatt.Name;
-					//			_sb.Append(objref);
-					//			//return Expression.Constant(objref);
-					//		}
-					//	}
-					//	else
-					//		throw new Exception("Member '" + node.Member.Name + "' is not queryable");
-					//}
-				}
-			}
-			else
-			{
-			if (node.Member.MemberType == MemberTypes.Property)
-			{
-				if (node.Member.DeclaringType != null)
-				{
-					var propertyinfo = ReflectionCache.GetProperty(node.Member.DeclaringType, node.Member.Name);
-					if (propertyinfo != null)
-						objref = propertyinfo.GetValue(null, null);
+					return Expression.Constant(objectReference);
 				}
 
-			}
-			else if (node.Member.MemberType == MemberTypes.Field)
-			{
-				if (node.Member.DeclaringType != null)
+				var parameterExpression = expression as ParameterExpression;
+				if (parameterExpression != null && memberStack.Count > 0)
 				{
-					var fieldinfo = ReflectionCache.GetField(node.Member.DeclaringType, node.Member.Name);
-					if (fieldinfo != null)
-						objref = fieldinfo.GetValue(null);
-				}				}
-				else
-					throw new Exception("Cant access member of type: " + node.Member.MemberType);
+					var memberInfo = memberStack.Pop();
+					var propertyInfo = ReflectionCache.GetProperty(parameterExpression.Type, memberInfo.Name);
+					if (propertyInfo != null)
+						objectReference = propertyInfo.GetValue(null, null);
+				}
+			}
+			else if (node?.Member != null)
+			{
+				objectReference = EvaluateStaticMember(node.Member);
 			}
 
 			return node;
 		}
 
-		//     protected override Expression VisitMember(MemberExpression node)
-		//     {
-		//         if (node.Member.DeclaringType == typeof(AdgangsAdresse))
-		//             return Expression.Constant(node.Member.Name.ToLower());
+		private object EvaluateMember(MemberInfo memberInfo, object objectInstance)
+		{
+			if (objectInstance == null)
+				return null;
 
-		//var c = Expression.Constant(node.Expression);
-		//var o = c.Value;
+			if (memberInfo.MemberType == MemberTypes.Property)
+			{
+				var propertyInfo = ReflectionCache.GetProperty(objectInstance.GetType(), memberInfo.Name);
+				return propertyInfo?.GetValue(objectInstance, null);
+			}
+			else if (memberInfo.MemberType == MemberTypes.Field)
+			{
+				var fieldInfo = ReflectionCache.GetField(objectInstance.GetType(), memberInfo.Name,
+					BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+				return fieldInfo?.GetValue(objectInstance);
+			}
 
-		//         Console.WriteLine(node.Member.Name + " # " + node.Member.DeclaringType);
+			return null;
+		}
 
-		//         return base.VisitMember(node);
-		//     }
+		private object EvaluateStaticMember(MemberInfo memberInfo)
+		{
+			if (memberInfo.DeclaringType == null)
+				return null;
 
-		///
+			if (memberInfo.MemberType == MemberTypes.Property)
+			{
+				var propertyInfo = ReflectionCache.GetProperty(memberInfo.DeclaringType, memberInfo.Name);
+				return propertyInfo?.GetValue(null, null);
+			}
+			else if (memberInfo.MemberType == MemberTypes.Field)
+			{
+				var fieldInfo = ReflectionCache.GetField(memberInfo.DeclaringType, memberInfo.Name);
+				return fieldInfo?.GetValue(null);
+			}
+
+			throw new InvalidOperationException($"Cannot access member of type: {memberInfo.MemberType}");
+		}
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
-			MethodInfo m = node.Method;
+			if (node?.Method == null)
+				return base.VisitMethodCall(node);
 
 			if (node.Object != null)
 				return Visit(node.Object) as ConstantExpression;
@@ -161,9 +131,9 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
-			var l = Visit(node.Left) as ConstantExpression;
-			if (l is ConstantExpression)
-				querystr.Append(l.Value);
+			var leftConstant = Visit(node.Left) as ConstantExpression;
+			if (leftConstant?.Value != null)
+				querystr.Append(leftConstant.Value);
 
 			switch (node.NodeType)
 			{
@@ -175,12 +145,12 @@ namespace ReadRestLib.Visitors
 					querystr.Append("&");
 					break;
 				default:
-					throw new Exception("Operator not supported: " + node.NodeType);
+					throw new InvalidOperationException($"Operator not supported: {node.NodeType}");
 			}
-			var r = Visit(node.Right) as ConstantExpression;
 
-			if (r is ConstantExpression)
-				querystr.Append(r.Value);
+			var rightConstant = Visit(node.Right) as ConstantExpression;
+			if (rightConstant?.Value != null)
+				querystr.Append(rightConstant.Value);
 
 			return node;
 		}
