@@ -1,29 +1,34 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
-using System.Reflection;
 using ReadRestLib.Model;
-using ReadRestLib.Utilities;
 
 namespace ReadRestLib.Visitors
 {
-	/// <summary>
-	/// Legacy visitor for evaluating LINQ expressions to query strings.
-	/// Note: EvaluateVisitorNew should be preferred for new code.
-	/// </summary>
-	class EvaluateVisitor : ExpressionVisitor
+	abstract class QueryExpressionVisitor : ExpressionVisitor
 	{
-		readonly StringBuilder querystr = new StringBuilder();
+		public abstract string Query { get; }
+	}
+
+	class EvaluateVisitor : QueryExpressionVisitor
+	{
+		StringBuilder querystr = new StringBuilder();
 
 		protected override Expression VisitLambda<T>(Expression<T> node)
 		{
-			querystr.Append("?");
 			Visit(node.Body);
 			return node;
 		}
 
-		public string Query { get { return querystr.ToString(); } }
+		public override string Query
+		{
+			get
+			{
+				string result = querystr.ToString();
+				// Clean up any leading or trailing ampersands
+				return result.TrimStart('&').TrimEnd('&');
+			}
+		}
 
 		protected override Expression VisitUnary(UnaryExpression node)
 		{
@@ -32,101 +37,18 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (node?.Member?.DeclaringType == typeof(AdgangsAdresse))
-				return Expression.Constant(node.Member.Name.ToLower());
+			if (node?.Member?.DeclaringType == null)
+				return base.VisitMember(node);
 
-			Expression expression = node;
-			var memberStack = new Stack<MemberInfo>();
-			object objectReference = null;
+			var memberName = node.Member.Name.ToLower();
 
-			// Unwrap nested member expressions
-			while (expression is MemberExpression memberExpr)
-			{
-				memberStack.Push(memberExpr.Member);
-				expression = memberExpr.Expression;
-			}
+			if (node.Member.DeclaringType == typeof(Postnummer))
+				return Expression.Constant(memberName);
 
-			if (expression != null)
-			{
-				var constantExpression = Visit(expression) as ConstantExpression;
-				if (constantExpression != null)
-				{
-					objectReference = constantExpression.Value;
+			if (node.Member.DeclaringType == typeof(AdgangsAdresse))
+				return Expression.Constant(memberName);
 
-					// Evaluate member access chain
-					while (memberStack.Count > 0)
-					{
-						var memberInfo = memberStack.Pop();
-						objectReference = EvaluateMember(memberInfo, objectReference);
-					}
-
-					return Expression.Constant(objectReference);
-				}
-
-				var parameterExpression = expression as ParameterExpression;
-				if (parameterExpression != null && memberStack.Count > 0)
-				{
-					var memberInfo = memberStack.Pop();
-					var propertyInfo = ReflectionCache.GetProperty(parameterExpression.Type, memberInfo.Name);
-					if (propertyInfo != null)
-						objectReference = propertyInfo.GetValue(null, null);
-				}
-			}
-			else if (node?.Member != null)
-			{
-				objectReference = EvaluateStaticMember(node.Member);
-			}
-
-			return node;
-		}
-
-		private object EvaluateMember(MemberInfo memberInfo, object objectInstance)
-		{
-			if (objectInstance == null)
-				return null;
-
-			if (memberInfo.MemberType == MemberTypes.Property)
-			{
-				var propertyInfo = ReflectionCache.GetProperty(objectInstance.GetType(), memberInfo.Name);
-				return propertyInfo?.GetValue(objectInstance, null);
-			}
-			else if (memberInfo.MemberType == MemberTypes.Field)
-			{
-				var fieldInfo = ReflectionCache.GetField(objectInstance.GetType(), memberInfo.Name,
-					BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-				return fieldInfo?.GetValue(objectInstance);
-			}
-
-			return null;
-		}
-
-		private object EvaluateStaticMember(MemberInfo memberInfo)
-		{
-			if (memberInfo.DeclaringType == null)
-				return null;
-
-			if (memberInfo.MemberType == MemberTypes.Property)
-			{
-				var propertyInfo = ReflectionCache.GetProperty(memberInfo.DeclaringType, memberInfo.Name);
-				return propertyInfo?.GetValue(null, null);
-			}
-			else if (memberInfo.MemberType == MemberTypes.Field)
-			{
-				var fieldInfo = ReflectionCache.GetField(memberInfo.DeclaringType, memberInfo.Name);
-				return fieldInfo?.GetValue(null);
-			}
-
-			throw new InvalidOperationException($"Cannot access member of type: {memberInfo.MemberType}");
-		}
-		protected override Expression VisitMethodCall(MethodCallExpression node)
-		{
-			if (node?.Method == null)
-				return base.VisitMethodCall(node);
-
-			if (node.Object != null)
-				return Visit(node.Object) as ConstantExpression;
-
-			return base.VisitMethodCall(node);
+			return base.VisitMember(node);
 		}
 
 		protected override Expression VisitBinary(BinaryExpression node)

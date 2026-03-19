@@ -34,6 +34,11 @@ The system uses a **three-stage expression tree transformation** (see `GenericPr
 
 3. **ExpressionTreeModifier** (`Visitors/ExpressionTreeModifier.cs`): Replaces DAWARepository constants with the IEnumerable result
    - Enables remaining LINQ operations (OrderBy, Select projections) to execute in-memory via LINQ-to-Objects
+   - this is necessary because only the first `where` is converted to query parameters; subsequent operations must work with the fetched data
+   - Preserves parameter nodes to maintain LINQ query structure
+   - Avoids mutating the original expression tree, instead creates a new modified tree
+   - do not attempt to replace any constants other than the DAWARepository<T> instance, as this risks breaking the expression tree structure and causing runtime errors
+   - does not attempt to push OrderBy/Select to the API, as this is not supported by the current implementation and would require a more complex translation layer
 
 ## Project Structure
 
@@ -72,14 +77,13 @@ ReadRestApp/              # Console example usage
    public class Resource { public string Id { get; set; } }
    ```
 
-2. **Create a Provider** (inherit `IQueryProvider`):
-   - Follow `AdgangsAdresseProvider.cs` structure
-   - Call `QueryVisitor.Visit()` to extract predicates
-   - Use corresponding `*Reader` to fetch data
+2. **Keep the GenericProvider** as the main entry point for all repositories:
+   - It uses reflection to determine the correct reader based on the model's `BaseUrl`
+   - Avoid creating multiple provider classes unless endpoint-specific logic is needed
 
-3. **Create a Reader** (inherit from `GenericReader<T>` or implement independently):
-   - Extract BaseUrl via reflection
-   - Append query string and call REST endpoint
+3. **Keep GenericReader** as the main deserialization engine for all models:
+   - It uses reflection to read the `BaseUrl` from the model class
+   - Avoid creating multiple reader classes unless endpoint-specific logic is needed
 
 ### Expression Tree Handling
 

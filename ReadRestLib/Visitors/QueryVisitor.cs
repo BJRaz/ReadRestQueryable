@@ -155,7 +155,7 @@ namespace ReadRestLib.Visitors
 					evaluateBody = filtered;
 			}
 
-			var evaluator = new EvaluateVisitorNew();
+			var evaluator = new EvaluateVisitor();
 			var evaluatedExpression = Evaluator.PartialEval(evaluateBody);
 
 			evaluator.Visit(evaluatedExpression);
@@ -223,7 +223,7 @@ namespace ReadRestLib.Visitors
 					{
 						var outerLambda = Expression.Lambda(outerFiltered);
 						var evaluatedOuter = Evaluator.PartialEval(outerLambda);
-						var evaluator = new EvaluateVisitorNew();
+						var evaluator = new EvaluateVisitor();
 						evaluator.Visit(evaluatedOuter);
 						evaluatedJoinInfo.OuterQuery = evaluator.Query;
 					}
@@ -241,7 +241,7 @@ namespace ReadRestLib.Visitors
 					{
 						var innerLambda = Expression.Lambda(innerFiltered);
 						var evaluatedInner = Evaluator.PartialEval(innerLambda);
-						var evaluator = new EvaluateVisitorNew();
+						var evaluator = new EvaluateVisitor();
 						evaluator.Visit(evaluatedInner);
 						evaluatedJoinInfo.InnerQuery = evaluator.Query;
 					}
