@@ -35,6 +35,23 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "run",
+            "command": "mono",
+            "type": "shell",
+            "args": [
+                "ReadRestApp/bin/Debug/net48/ReadRestApp.exe"
+            ],
+            "group": {
+                "kind": "test"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "dependsOn": "build"
         }
     ]
 }

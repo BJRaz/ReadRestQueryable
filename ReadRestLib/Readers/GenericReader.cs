@@ -17,6 +17,27 @@ namespace ReadRestLib.Readers
 		private readonly string _baseUrl;
 		private const string DefaultStructure = "mini";
 
+		protected TextWriter _log;
+        public TextWriter Log
+        {
+            get
+            {
+                return _log;
+            }
+            set
+            {
+                _log = value;
+            }
+        }
+
+		protected void WriteToLog(string message)
+		{
+			if (Log != null)
+			{
+				Log.WriteLine(message);
+			}
+		}		
+
 		public GenericReader(string query)
 		{
 			_query = query ?? string.Empty;
@@ -80,10 +101,10 @@ namespace ReadRestLib.Readers
 			return $"{_baseUrl}{_query}{separator}struktur={DefaultStructure}";
 		}
 
-		private static void LogDebugInfo(string url)
+		private void LogDebugInfo(string url)
 		{
 #if DEBUG
-			Console.WriteLine("QUERY => " + url);
+			WriteToLog("QUERY => " + url);
 #endif
 		}
 

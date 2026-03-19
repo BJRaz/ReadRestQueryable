@@ -115,11 +115,11 @@ namespace ReadRestLib.Tests
 			var q = new QueryVisitor();
 			q.Visit(query.Expression);
 			
-		// Evaluate the main where clause
-		var mainQuery = q.Evaluate();
-		
-		// Evaluate each join expression for each provider
-		var joinExpressions = q.GetJoinExpressions();			// assert
+			// Evaluate the main where clause
+			var mainQuery = q.Evaluate();
+			
+			// Evaluate each join expression for each provider
+			var joinExpressions = q.GetJoinExpressions();			// assert
 			Assert.IsNotEmpty(mainQuery);
 			// The main query contains conditions from the where clause - should only have outer conditions
 			Assert.That(mainQuery, Is.EqualTo("?postnr=5000&husnr=10"), "Should contain postal code and house number conditions");
