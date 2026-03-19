@@ -43,8 +43,14 @@ namespace ReadRestLib.Visitors
 			if (node.Method.Name == "Join" && node.Arguments.Count > 4)
 			{
 				// Extract join key selectors to get parameter names
-				var outerKeySelector = node.Arguments[2] as LambdaExpression;
-				var innerKeySelector = node.Arguments[3] as LambdaExpression;
+				var outerKeyArg = node.Arguments[2];
+				if (outerKeyArg.NodeType == ExpressionType.Quote)
+					outerKeyArg = ((UnaryExpression)outerKeyArg).Operand;
+				var outerKeySelector = outerKeyArg as LambdaExpression;
+				var innerKeyArg = node.Arguments[3];
+				if (innerKeyArg.NodeType == ExpressionType.Quote)
+					innerKeyArg = ((UnaryExpression)innerKeyArg).Operand;
+				var innerKeySelector = innerKeyArg as LambdaExpression;
 				
 				var outerParamName = outerKeySelector?.Parameters.FirstOrDefault()?.Name ?? "x";
 				var innerParamName = innerKeySelector?.Parameters.FirstOrDefault()?.Name ?? "y";

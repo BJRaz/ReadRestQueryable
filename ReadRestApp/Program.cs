@@ -15,6 +15,12 @@ namespace ReadRestApp
 				where p.Nr == "5000" && a.HusNr == "10" && a.Vejnavn.Contains("Vesterg")
 				orderby a.Vejnavn
 				select new { adresse = a, postnr = p };
+
+				foreach (var item in items)
+				{
+					Console.WriteLine($"Got item: {item}");
+				}
+				Console.WriteLine("Done");
 		}
 	}
 }
