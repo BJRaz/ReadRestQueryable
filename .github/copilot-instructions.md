@@ -6,8 +6,8 @@
 
 ### Core Concept
 - **Single-pass expression evaluation**: Only the innermost `where` clause in the same LINQ statement is converted to query parameters; nested `where` clauses execute in-memory via LINQ-to-Objects
-- **Custom IQueryProvider implementation**: `GenericProvider` and `AdgangsAdresseProvider` intercept LINQ expressions and translate them to REST API queries
-- **REST API integration**: Currently targets DAWA (Danish Address Service) APIs but designed for generic provider extensibility
+- **Custom IQueryProvider implementation**: `GenericProvider` intercepts LINQ expressions and translates them to REST API queries
+- **REST API integration**: Uses `GenericProvider` and `GenericReader<T>` to work with any REST API by leveraging the `[BaseUrl]` attribute on model classes
 
 ### Key Achievement
 Users write natural LINQ like:
@@ -45,11 +45,9 @@ The system uses a **three-stage expression tree transformation** (see `GenericPr
 ```
 ReadRestLib/               # Core custom LINQ provider
 ├── Providers/             # IQueryProvider implementations
-│   ├── GenericProvider.cs # Generic orchestrator
-│   └── AdgangsAdresseProvider.cs
+│   └── GenericProvider.cs # Generic orchestrator for all model types
 ├── Readers/               # REST API communication & deserialization
-│   ├── GenericReader.cs
-│   └── AdgangsAdresseReader.cs
+│   └── GenericReader.cs   # Generic deserializer for all models
 ├── Visitors/              # Expression tree transformations
 │   ├── QueryVisitor.cs    # Extract REST predicates
 │   ├── ExpressionTreeModifier.cs # Replace constants
@@ -77,13 +75,10 @@ ReadRestApp/              # Console example usage
    public class Resource { public string Id { get; set; } }
    ```
 
-2. **Keep the GenericProvider** as the main entry point for all repositories:
-   - It uses reflection to determine the correct reader based on the model's `BaseUrl`
-   - Avoid creating multiple provider classes unless endpoint-specific logic is needed
-
-3. **Keep GenericReader** as the main deserialization engine for all models:
-   - It uses reflection to read the `BaseUrl` from the model class
-   - Avoid creating multiple reader classes unless endpoint-specific logic is needed
+2. **Use GenericProvider and GenericReader** — no provider-specific classes needed:
+   - `GenericProvider` uses reflection to determine the correct reader based on the model's `BaseUrl`
+   - `GenericReader<T>` uses reflection to read the `BaseUrl` from the model class
+   - Both work out-of-the-box for any model with the `[BaseUrl]` attribute
 
 ### Expression Tree Handling
 
@@ -107,8 +102,9 @@ dotnet build /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
 ```
 
 ### Run Tests
+**Always use TestRunner, not `dotnet test`** (dotnet test fails on macOS due to x86 testhost limitations):
 ```bash
-sh -c "mcs TestRunner.cs -target:exe -out:TestRunner.exe && mono TestRunner.exe"
+mcs TestRunner.cs -target:exe -out:TestRunner.exe && mono TestRunner.exe
 ```
 Or via VS Code task: `Run Test Task`
 
