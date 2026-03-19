@@ -86,6 +86,8 @@ ReadRestApp/              # Console example usage
 - **Parameters must stay unparameterized** in `Evaluator.PartialEval()` — constant arithmetic/method calls are pre-evaluated, parameters are preserved
 - **Join expressions** are partially supported — extracted into metadata but full relational algebra not implemented; most filtering still happens in-memory
 - **OrderBy/Select** after the initial `where` execute in-memory on fetched data (not pushed to API)
+- **Only the first `where` in the same LINQ statement is converted to query parameters**; nested `where` clauses execute in-memory
+- **ExpressionTreeModifier** must only replace constants of type `DAWARepository<T>` with the fetched `IEnumerable<T>`; any other replacements risk breaking the expression tree structure
 
 ### Newtonsoft.Json Deserialization
 
