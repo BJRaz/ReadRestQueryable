@@ -5,8 +5,8 @@ using ReadRestLib.Model;
 using ReadRestLib.Visitors;
 using System.IO;
 
-
-
+namespace ReadRestLib.Tests
+{
     [TestFixture]
     public class StreamTests
     {
@@ -40,7 +40,7 @@ using System.IO;
         }
     }
 
-}
+
     /// <summary>
     /// Integration tests that call the live DAWA REST API.
     /// These tests require internet connectivity and may be skipped if the network is unavailable.
