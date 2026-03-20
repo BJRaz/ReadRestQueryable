@@ -5,8 +5,42 @@ using ReadRestLib.Model;
 using ReadRestLib.Visitors;
 using System.IO;
 
-namespace ReadRestLib.Tests
-{
+
+
+    [TestFixture]
+    public class StreamTests
+    {
+        private const string ApiUrl = @"https://api.dataforsyningen.dk/adresser?q=Holmehus*";
+
+        [Test]
+        public void StreamTest()
+        {
+            var obj = FetchAddresses(ApiUrl);
+
+            Assert.IsNotNull(obj);
+            PrintAddresses(obj);
+        }
+
+        private System.Collections.Generic.IEnumerable<Adresse> FetchAddresses(string url)
+        {
+            var req = System.Net.WebRequest.Create(url);
+            using (var contentstream = req.GetResponse().GetResponseStream())
+            using (var reader = new StreamReader(contentstream))
+            {
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.IEnumerable<Adresse>>(reader.ReadToEnd());
+            }
+        }
+
+        private void PrintAddresses(System.Collections.Generic.IEnumerable<Adresse> addresses)
+        {
+            foreach (var address in addresses)
+            {
+                Console.WriteLine(address.AdresseBetegnelse);
+            }
+        }
+    }
+
+}
     /// <summary>
     /// Integration tests that call the live DAWA REST API.
     /// These tests require internet connectivity and may be skipped if the network is unavailable.
