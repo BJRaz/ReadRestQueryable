@@ -175,14 +175,14 @@ namespace ReadRestLib.Tests
         {
             // Architectural test: verifies only the first where is pushed to API,
             // and the second where executes in-memory.
-            // API query: husnr=10 (nationwide)
+            // API query: postnr=7730&husnr=10 (narrowed to a small postal area)
             // In-memory filter: SupplerendeBynavn == "Hanstholm"
             var stringWriter = new StringWriter();
             var repo = new DAWARepository<AdgangsAdresse>();
             repo.Log = stringWriter;
 
             var query = (from x in repo
-                         where x.HusNr == "10"
+                         where x.Postnr == "7730" && x.HusNr == "10"
                          where x.SupplerendeBynavn == "Hanstholm"
                          select x).AsQueryable();
 
@@ -191,6 +191,8 @@ namespace ReadRestLib.Tests
                 var results = query.ToList();
                 Assert.IsNotNull(results, "Results should not be null");
                 // All returned items must satisfy both filters (in-memory filter is applied)
+                Assert.IsTrue(results.All(x => x.Postnr == "7730"),
+                    "All results should have Postnr == 7730");
                 Assert.IsTrue(results.All(x => x.HusNr == "10"),
                     "All results should have HusNr == 10");
                 Assert.IsTrue(results.All(x => x.SupplerendeBynavn == "Hanstholm"),
@@ -209,7 +211,7 @@ namespace ReadRestLib.Tests
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs:\n{logs}");
                 // Only the first where is pushed to the API
-                Assert.That(logs, Does.Contain("Query: '?husnr=10'"),
+                Assert.That(logs, Does.Contain("Query: '?postnr=7730&husnr=10'"),
                     "Log should show only the first where clause pushed to the API");
                 Assert.That(logs, Does.Not.Contain("supplerendebynavn"),
                     "Second where (SupplerendeBynavn) must NOT appear in the REST query");
@@ -223,7 +225,7 @@ namespace ReadRestLib.Tests
             // Tests the complete join pipeline: two REST calls + join in-memory.
             // Query: join on a.Postnr equals p.Nr
             //        where a.Postnr == "5000" && a.HusNr == "10" && a.Vejnavn.Contains("Vesterg") && p.Nr == "5000"
-            // Expected: outer query has postnr=5000&husnr=10 (Contains excluded)
+            // Expected: outer query has postnr=5000&husnr=10&q=*Vesterg* (Contains translated)
             //           inner query has nr=5000
             //           results contain addresses with correct join key match
 
@@ -260,8 +262,8 @@ namespace ReadRestLib.Tests
             {
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs after execution:\n{logs}");
-                Assert.That(logs, Does.Contain("Query: '?postnr=5000&husnr=10'"),
-                    "Logs should contain AdgangsAdresse query with postnr=5000&husnr=10");
+                Assert.That(logs, Does.Contain("Query: '?postnr=5000&husnr=10&q=*Vesterg*'"),
+                    "Logs should contain AdgangsAdresse query with postnr=5000&husnr=10&q=*Vesterg*");
                 Assert.That(logs, Does.Contain("Query: '?nr=5000'"),
                     "Logs should contain Postnummer query with nr=5000");
             }

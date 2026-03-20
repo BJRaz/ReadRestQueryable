@@ -505,6 +505,14 @@ namespace ReadRestLib.Visitors
 				return null;
 			}
 
+			protected override Expression VisitMethodCall(MethodCallExpression node)
+			{
+				// Filter method calls (e.g. StartsWith, Contains, EndsWith) by member name
+				if (ContainsReferencedMember(node))
+					return node;
+				return null;
+			}
+
 			private bool ContainsReferencedMember(Expression expr)
 			{
 				var visitor = new MemberReferenceCheckVisitor(_memberName);
@@ -544,6 +552,14 @@ namespace ReadRestLib.Visitors
 				}
 
 				// For other operations, check if they reference any excluded members
+				if (!ContainsExcludedMembers(node))
+					return node;
+				return null;
+			}
+
+			protected override Expression VisitMethodCall(MethodCallExpression node)
+			{
+				// Exclude method calls (e.g. StartsWith, Contains, EndsWith) referencing excluded members
 				if (!ContainsExcludedMembers(node))
 					return node;
 				return null;

@@ -87,6 +87,8 @@ ReadRestApp/              # Console example usage
 - **`Equal` (`==`)**: Converted to REST query parameters (e.g., `postnr=5000`)
 - **`And`/`AndAlso` (`&&`)**: Combines multiple predicates in REST query with `&`
 - **`StartsWith("X")`**: Translated to `q=X*` REST query parameter (always uses `q` parameter name, regardless of which property calls `StartsWith`)
+- **`Contains("X")`**: Translated to `q=*X*` REST query parameter (wildcard contains search)
+- **`EndsWith("X")`**: Translated to `q=*X` REST query parameter (wildcard ends-with search)
 - **`Or`/`OrElse` (`||`) on same property**: Collapses to pipe-delimited values (e.g., `a.Kommunekode == "0101" || a.Kommunekode == "0202"` → `kommunekode=0101|0202`). Supports chaining 3+ values. **Only supported when all sides reference the same property name.**
 
 #### Silently Skipped Operators (Applied In-Memory)
@@ -94,7 +96,7 @@ The following operators are silently dropped from the REST query string and inst
 - **`NotEqual` (`!=`)**: Silently skipped; filtered in-memory
 - **`GreaterThan`, `LessThan`, `GreaterThanOrEqual`, `LessThanOrEqual`** (`>`, `<`, `>=`, `<=`): Silently skipped
 - **`Or`/`OrElse` (`||`) on different properties**: Silently skipped (e.g., `a.Kommunekode == "0101" || a.Postnr == "5000"` cannot be represented in REST; entire expression is dropped and filtered in-memory)
-- **`Contains`, `EndsWith`** and other method calls: Silently skipped; only `StartsWith` is translated to REST
+- Other unsupported method calls: Silently skipped; only `StartsWith`, `Contains`, and `EndsWith` are translated to REST
 
 #### LINQ Operation Behavior
 - **Parameters must stay unparameterized** in `Evaluator.PartialEval()` — constant arithmetic/method calls are pre-evaluated, parameters are preserved
@@ -143,7 +145,9 @@ dotnet run --project ReadRestApp/ReadRestApp.csproj
 ## Common Debugging Points
 
 - **Query string not generated?** → Check QueryVisitor.Visit() logs; ensure `where` clause is in the outermost LINQ statement; verify operators are supported (`==`, `&&`, `StartsWith`, `||` on same property)
-- **`StartsWith` not appearing in REST query?** → Verify the method call is `StartsWith` (not `Contains` or `EndsWith`); it always maps to `q=X*` parameter regardless of which property calls it
+- **`StartsWith` not appearing in REST query?** → Verify the method call is `StartsWith` (not another method); it always maps to `q=X*` parameter regardless of which property calls it
+- **`Contains` not appearing in REST query?** → Verify the method call is `Contains`; it maps to `q=*X*` parameter regardless of which property calls it
+- **`EndsWith` not appearing in REST query?** → Verify the method call is `EndsWith`; it maps to `q=*X` parameter regardless of which property calls it
 - **`||` not appearing in REST query?** → Only works when both sides are `==` on the **same property** (e.g., `a.Kommunekode == "X" || a.Kommunekode == "Y"`); different properties are silently skipped to in-memory
 - **Deserialization fails?** → Verify model property names match API JSON response (case-sensitive); test with IntegrationTest.cs
 - **In-memory filtering slower than expected?** → OrderBy/Select not pushed to API; move all filtering to initial `where`; `!=`, `Contains`, `EndsWith` are in-memory only
@@ -155,7 +159,6 @@ dotnet run --project ReadRestApp/ReadRestApp.csproj
 1. **`NotEqual` (`!=`) silently skipped**: Dropped from REST query; filtered in-memory. This means ALL rows matching the equality predicates are fetched, then `!=` is applied in-memory
 2. **Comparison operators silently skipped**: No `>`, `<`, `>=`, `<=` in REST queries; applied in-memory
 3. **`Or` on different properties silently skipped**: `a.X == "1" || a.Y == "2"` cannot be represented in REST; entire `||` expression is dropped and filtered in-memory
-4. **`Contains` and `EndsWith` not translated to REST**: Only `StartsWith` maps to `q=X*`; `Contains` and `EndsWith` are silently skipped to in-memory
-5. **`StartsWith` always uses `q` parameter**: Regardless of which property calls `StartsWith`, the REST parameter is always `q` (matching DAWA API convention)
-6. **No pagination**: `Skip()` and `Take()` not pushed to API; all results fetched then filtered in-memory
-7. **No sorting at REST level**: `OrderBy` applied after fetch; for large result sets, consider filtering more aggressively in `where`
+4. **`StartsWith`, `Contains`, `EndsWith` all use `q` parameter**: Regardless of which property calls these methods, the REST parameter is always `q` (matching DAWA API convention). Only one `q` parameter can be used per query.
+5. **No pagination**: `Skip()` and `Take()` not pushed to API; all results fetched then filtered in-memory
+6. **No sorting at REST level**: `OrderBy` applied after fetch; for large result sets, consider filtering more aggressively in `where`

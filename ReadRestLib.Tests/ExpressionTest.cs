@@ -165,11 +165,11 @@ namespace ReadRestLib.Tests
             var repo = new DAWARepository<AdgangsAdresse>();
             repo.Log = stringWriter;
 
-            // Only the first where is pushed to the API (husnr=10).
+            // Only the first where is pushed to the API (postnr=7730&husnr=10).
             // The second where (SupplerendeBynavn == "Hanstholm") executes in-memory
             // on the full result set returned by the API.
             var query = (from x in repo
-                         where x.HusNr == "10"
+                         where x.Postnr == "7730" && x.HusNr == "10"
                          where x.SupplerendeBynavn == "Hanstholm"
                          select x).AsQueryable();
 
@@ -179,10 +179,10 @@ namespace ReadRestLib.Tests
 
             var querystring = q.Evaluate();
             Assert.IsNotEmpty(querystring);
-            Assert.AreEqual("?husnr=10", querystring);
+            Assert.AreEqual("?postnr=7730&husnr=10", querystring);
 
             // act - verify live data:
-            // API is called with only husnr=10 (all nationwide addresses at nr 10),
+            // API is called with postnr=7730&husnr=10 (narrowed to Hanstholm area),
             // then SupplerendeBynavn == "Hanstholm" filters in-memory.
             // The key assertion is architectural: supplerendebynavn must NOT appear in the REST call.
             try
@@ -190,6 +190,8 @@ namespace ReadRestLib.Tests
                 var results = query.ToList();
                 Assert.IsNotNull(results, "Results should not be null");
                 // All returned items must satisfy both filters (in-memory filter is applied)
+                Assert.IsTrue(results.All(x => x.Postnr == "7730"),
+                    "All results should have Postnr == 7730");
                 Assert.IsTrue(results.All(x => x.HusNr == "10"),
                     "All results should have HusNr == 10");
                 Assert.IsTrue(results.All(x => x.SupplerendeBynavn == "Hanstholm"),
@@ -208,7 +210,7 @@ namespace ReadRestLib.Tests
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs:\n{logs}");
                 // Only the first where is pushed to the API
-                Assert.That(logs, Does.Contain("Query: '?husnr=10'"),
+                Assert.That(logs, Does.Contain("Query: '?postnr=7730&husnr=10'"),
                     "Log should show only the first where clause pushed to the API");
                 Assert.That(logs, Does.Not.Contain("supplerendebynavn"),
                     "Second where (SupplerendeBynavn) must NOT appear in the REST query");
@@ -259,7 +261,8 @@ namespace ReadRestLib.Tests
             var joinExpressions = q.GetJoinExpressions();           // assert
             Assert.IsNotEmpty(mainQuery);
             // The main query contains conditions from the where clause - should only have outer conditions
-            Assert.That(mainQuery, Is.EqualTo("?postnr=5000&husnr=10"), "Should contain postal code and house number conditions");
+            // Contains("Vesterg") is now translated to q=*Vesterg* in the REST query
+            Assert.That(mainQuery, Is.EqualTo("?postnr=5000&husnr=10&q=*Vesterg*"), "Should contain postal code, house number, and Contains conditions");
 
             // Verify join was captured
             Assert.AreEqual(1, q.JoinCount, "Expected one join expression");
@@ -268,7 +271,8 @@ namespace ReadRestLib.Tests
             Assert.IsNotNull(joinInfo, "Join info should not be null");
 
             // Verify outer and inner queries are correctly split
-            Assert.That(joinInfo.OuterQuery, Is.EqualTo("postnr=5000&husnr=10"), "Outer query should contain postnr and husnr");
+            // Contains("Vesterg") is now translated to q=*Vesterg* in the outer query
+            Assert.That(joinInfo.OuterQuery, Is.EqualTo("postnr=5000&husnr=10&q=*Vesterg*"), "Outer query should contain postnr, husnr, and Contains");
             Assert.That(joinInfo.InnerQuery, Is.EqualTo("nr=5000"), "Inner query should contain nr");
 
             System.Console.WriteLine($"Join info successfully captured with key: {joinInfo.JoinKey}");
@@ -293,7 +297,7 @@ namespace ReadRestLib.Tests
                 // Assert the logs contain expected query strings for each type
                 var logsAfterExecution = stringWriter.ToString();
 				System.Console.WriteLine($"Logs after execution:\n{logsAfterExecution}");
-                Assert.That(logsAfterExecution, Does.Contain("Query: '?postnr=5000&husnr=10'"), "Logs should contain AdgangsAdresse query: postnr=5000&husnr=10");
+                Assert.That(logsAfterExecution, Does.Contain("Query: '?postnr=5000&husnr=10&q=*Vesterg*'"), "Logs should contain AdgangsAdresse query: postnr=5000&husnr=10&q=*Vesterg*");
                 Assert.That(logsAfterExecution, Does.Contain("Query: '?nr=5000'"), "Logs should contain Postnummer query: nr=5000");
             }
 
@@ -559,11 +563,11 @@ namespace ReadRestLib.Tests
         }
 
         [Test()]
-        public void TestContainsSilentlySkipped()
+        public void TestContainsTranslatesToQParameter()
         {
-            // Verifies that Contains method call is silently skipped (not translated to REST).
+            // Verifies that Contains("X") is translated to q=*X* in the REST query.
             // Query: where a.HusNr == "10" && a.Vejnavn.Contains("gade")
-            // Expected REST: ?husnr=10
+            // Expected REST: ?husnr=10&q=*gade*
 
             var repo = new DAWARepository<AdgangsAdresse>();
 
@@ -576,14 +580,36 @@ namespace ReadRestLib.Tests
 
             var querystring = q.Evaluate();
             Assert.IsNotEmpty(querystring);
-            Assert.AreEqual("?husnr=10", querystring,
-                "Contains should be silently skipped; only equality predicates in REST query");
+            Assert.AreEqual("?husnr=10&q=*gade*", querystring,
+                "Contains(\"gade\") should translate to q=*gade*");
+        }
+
+        [Test()]
+        public void TestEndsWithTranslatesToQParameter()
+        {
+            // Verifies that EndsWith("X") is translated to q=*X in the REST query.
+            // Query: where a.HusNr == "10" && a.Vejnavn.EndsWith("gade")
+            // Expected REST: ?husnr=10&q=*gade
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.HusNr == "10" && a.Vejnavn.EndsWith("gade")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?husnr=10&q=*gade", querystring,
+                "EndsWith(\"gade\") should translate to q=*gade");
         }
 
         [Test()]
         public void TestCombinedEqualityStartsWithOrElseNotEqual()
         {
-            // Verifies the combined query pattern from Program.cs:
+            // Verifies the combined query pattern:
             //   where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
             //         && (a.Kommunekode == "0101" || a.Kommunekode == "0202") && a.Postnr != "5540"
             // Expected REST: ?husnr=10&q=Vester*&kommunekode=0101|0202
@@ -603,6 +629,50 @@ namespace ReadRestLib.Tests
             Assert.IsNotEmpty(querystring);
             Assert.AreEqual("?husnr=10&q=Vester*&kommunekode=0101|0202", querystring,
                 "Combined query: equality + StartsWith(q=) + OrElse(pipe) + NotEqual(skipped)");
+        }
+
+        [Test()]
+        public void TestContainsOnlyTranslatesToQParameter()
+        {
+            // Verifies that Contains("X") alone translates to q=*X*.
+            // Query: where a.Vejnavn.Contains("gade")
+            // Expected REST: ?q=*gade*
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Vejnavn.Contains("gade")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?q=*gade*", querystring,
+                "Contains(\"gade\") should translate to q=*gade*");
+        }
+
+        [Test()]
+        public void TestEndsWithOnlyTranslatesToQParameter()
+        {
+            // Verifies that EndsWith("X") alone translates to q=*X.
+            // Query: where a.Vejnavn.EndsWith("gade")
+            // Expected REST: ?q=*gade
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Vejnavn.EndsWith("gade")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?q=*gade", querystring,
+                "EndsWith(\"gade\") should translate to q=*gade");
         }
 
 

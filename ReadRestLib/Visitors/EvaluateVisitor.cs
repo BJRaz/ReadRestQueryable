@@ -60,23 +60,40 @@ namespace ReadRestLib.Visitors
 		/// <summary>
 		/// Handles method calls in the expression tree.
 		/// StartsWith("X") is translated to REST query parameter q=X*
-		/// All other method calls (Contains, EndsWith, etc.) are silently skipped
+		/// Contains("X") is translated to REST query parameter q=*X*
+		/// EndsWith("X") is translated to REST query parameter q=*X
+		/// All other method calls are silently skipped
 		/// and will be applied in-memory by LINQ-to-Objects.
 		/// </summary>
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
-			if (node.Method.Name == "StartsWith"
-				&& node.Object is MemberExpression
-				&& node.Arguments.Count >= 1)
+			if (node.Object is MemberExpression && node.Arguments.Count >= 1)
 			{
-				// Extract the constant argument value
 				var argValue = ExtractConstantValue(node.Arguments[0]);
 				if (argValue != null)
 				{
-					querystr.Append("q=");
-					querystr.Append(argValue);
-					querystr.Append("*");
-					return node;
+					if (node.Method.Name == "StartsWith")
+					{
+						querystr.Append("q=");
+						querystr.Append(argValue);
+						querystr.Append("*");
+						return node;
+					}
+
+					if (node.Method.Name == "Contains")
+					{
+						querystr.Append("q=*");
+						querystr.Append(argValue);
+						querystr.Append("*");
+						return node;
+					}
+
+					if (node.Method.Name == "EndsWith")
+					{
+						querystr.Append("q=*");
+						querystr.Append(argValue);
+						return node;
+					}
 				}
 			}
 
