@@ -160,8 +160,7 @@ namespace ReadRestLib.Visitors
 
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
-			var l = Visit(node.Left) as ConstantExpression;
-			if (l is ConstantExpression)
+			if (Visit(node.Left) is ConstantExpression l)
 				querystr.Append(l.Value);
 
 			switch (node.NodeType)
@@ -176,9 +175,8 @@ namespace ReadRestLib.Visitors
 				default:
 					throw new Exception("Operator not supported: " + node.NodeType);
 			}
-			var r = Visit(node.Right) as ConstantExpression;
 
-			if (r is ConstantExpression)
+			if (Visit(node.Right) is ConstantExpression r)
 				querystr.Append(r.Value);
 
 			return node;

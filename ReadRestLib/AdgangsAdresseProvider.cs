@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using ReadRestLib.Visitors;
 using ReadRestLib.Readers;
 
@@ -8,6 +9,12 @@ namespace ReadRestLib
 	public class AdgangsAdresseProvider : IQueryProvider
 	{
 		Type typeOfElement;
+
+		private static readonly MethodInfo _getQueryableMethod =
+			typeof(AdgangsAdresseProvider).GetMethod(nameof(GetQueryable));
+
+		private static readonly MethodInfo _getExpressionVisitorMethod =
+			typeof(AdgangsAdresseProvider).GetMethod(nameof(GetExpressionVisitor));
 
 		public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
 		{
@@ -34,13 +41,13 @@ namespace ReadRestLib
 		public object Execute(System.Linq.Expressions.Expression expression)
 		{
 
-			var method = GetType().GetMethod("GetQueryable").MakeGenericMethod(typeOfElement);
+			var method = _getQueryableMethod.MakeGenericMethod(typeOfElement);
 
 			var queryable = method.Invoke(this, new object[] { expression }) as IQueryable;
 
 			var provider = queryable.Provider;                                      // this is the readers Provider - defaults to IEnumerable Provider (memory/object linq)
 
-			var methodExp = GetType().GetMethod("GetExpressionVisitor").MakeGenericMethod(typeOfElement);
+			var methodExp = _getExpressionVisitorMethod.MakeGenericMethod(typeOfElement);
 
 			var expressiontreemodifier = methodExp.Invoke(this, new object[] { queryable }) as System.Linq.Expressions.ExpressionVisitor;
 

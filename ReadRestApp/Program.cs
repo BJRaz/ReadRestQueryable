@@ -18,10 +18,11 @@ namespace ReadRestApp
 						orderby a.Vejnavn
 						select a;
 			var i = 1;
+			var properties = typeof(AdgangsAdresse).GetProperties();
 			foreach (var item in items)
 			{
 				Console.WriteLine("Record: " + (i++) + " ***** ");
-				foreach (var prop in item.GetType().GetProperties())
+				foreach (var prop in properties)
 				{
 					Console.WriteLine(prop.Name + "\t" + prop.GetValue(item));
 				}

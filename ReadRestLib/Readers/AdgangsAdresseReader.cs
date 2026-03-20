@@ -18,9 +18,9 @@ namespace ReadRestLib.Readers
 
 		public IEnumerator<T> GetEnumerator()
 		{
-			if (query == string.Empty)
+			if (string.IsNullOrEmpty(query))
 				throw new Exception("QUERY is empty");
-			var requestUrl = baseUrl + ((query == string.Empty) ? query + "?struktur=flad" : query + "&struktur=flad");
+			var requestUrl = baseUrl + query + "&struktur=flad";
 
 			var req = WebRequest.Create(requestUrl);
 

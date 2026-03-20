@@ -1,16 +1,10 @@
-﻿using System;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace ReadRestLib.Visitors
 {
 	class QueryVisitor : ExpressionVisitor
 	{
 		MethodCallExpression innerWhereExpression;
-
-		public override Expression Visit(Expression node)
-		{
-			return base.Visit(node);
-		}
 
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
@@ -26,7 +20,6 @@ namespace ReadRestLib.Visitors
 		{
 			var evaluator = new EvaluateVisitor();
 			evaluator.Visit(innerWhereExpression);
-			Console.WriteLine(evaluator.Query);
 			return evaluator.Query;
 		}
 	}
