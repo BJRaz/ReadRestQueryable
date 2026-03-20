@@ -325,8 +325,8 @@ namespace ReadRestLib.Tests
             //   orderby a.Vejnavn
             //   select a
             //
-            // Tests single-source query with method-call exclusion and in-memory ordering.
-            // Expected: REST query has husnr=10&postnr=5540 (StartsWith excluded)
+            // Tests single-source query with StartsWith translated to q=Vester*.
+            // Expected: REST query has husnr=10&q=Vester*&postnr=5540
             //           results are ordered by Vejnavn (in-memory)
             //           all results match the predicates
 
@@ -350,7 +350,7 @@ namespace ReadRestLib.Tests
                 Assert.IsTrue(results.All(x => x.Postnr == "5540"),
                     "All results should be in postnr 5540");
                 Assert.IsTrue(results.All(x => x.Vejnavn.StartsWith("Vester")),
-                    "All results should have Vejnavn starting with 'Vester' (applied in-memory)");
+                    "All results should have Vejnavn starting with 'Vester'");
                 // Verify ordering is applied (in-memory after fetch)
                 var vejnavne = results.Select(x => x.Vejnavn).ToList();
                 var sortedVejnavne = vejnavne.OrderBy(v => v).ToList();
@@ -368,8 +368,8 @@ namespace ReadRestLib.Tests
             {
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs:\n{logs}");
-                Assert.That(logs, Does.Contain("Query: '?husnr=10&postnr=5540'"),
-                    "Logs should contain the correct REST query without StartsWith");
+                Assert.That(logs, Does.Contain("Query: '?husnr=10&q=Vester*&postnr=5540'"),
+                    "Logs should contain the REST query with q=Vester*");
             }
         }
 
@@ -382,9 +382,8 @@ namespace ReadRestLib.Tests
             //   orderby a.Vejnavn
             //   select a
             //
-            // Tests single-source query with StartsWith method-call exclusion and in-memory ordering.
-            // Expected: REST query has husnr=10&postnr=5540 (StartsWith excluded from REST)
-            //           results are filtered in-memory for Vejnavn.StartsWith("Vester")
+            // Tests single-source query with StartsWith translated to q=Vester* in REST.
+            // Expected: REST query has husnr=10&q=Vester*&postnr=5540
             //           results are ordered by Vejnavn (in-memory)
 
             var stringWriter = new StringWriter();
@@ -407,7 +406,7 @@ namespace ReadRestLib.Tests
                 Assert.IsTrue(results.All(x => x.Postnr == "5540"),
                     "All results should be in postnr 5540");
                 Assert.IsTrue(results.All(x => x.Vejnavn.StartsWith("Vester")),
-                    "All results should have Vejnavn starting with 'Vester' (applied in-memory)");
+                    "All results should have Vejnavn starting with 'Vester'");
                 // Verify ordering is applied (in-memory after fetch)
                 var vejnavne = results.Select(x => x.Vejnavn).ToList();
                 var sortedVejnavne = vejnavne.OrderBy(v => v).ToList();
@@ -426,9 +425,111 @@ namespace ReadRestLib.Tests
             {
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs:\n{logs}");
-                // husnr and postnr should be in the REST query; StartsWith is not REST-friendly
-                Assert.That(logs, Does.Contain("Query: '?husnr=10&postnr=5540'"),
-                    "Logs should contain the REST query with husnr and postnr (StartsWith excluded)");
+                Assert.That(logs, Does.Contain("Query: '?husnr=10&q=Vester*&postnr=5540'"),
+                    "Logs should contain the REST query with q=Vester*");
+            }
+        }
+
+        [Test()]
+        public void TestCombinedStartsWithAndOrElseLiveData()
+        {
+            // Integration test for combined query with StartsWith and OrElse on same property:
+            //   from a in adr
+            //   where a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+            //         && (a.Kommunekode == "0440" || a.Kommunekode == "0450")
+            //   select a
+            //
+            // Expected REST query: ?q=Vester*&postnr=5540&kommunekode=0440|0450
+            // StartsWith → q=Vester*, OrElse same-property → kommunekode=0440|0450
+
+            var stringWriter = new StringWriter();
+            var adr = new DAWARepository<AdgangsAdresse>();
+            adr.Log = stringWriter;
+
+            var query = (from a in adr
+                         where a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+                               && (a.Kommunekode == "0440" || a.Kommunekode == "0450")
+                         select a).AsQueryable();
+
+            try
+            {
+                var results = query.ToList();
+                Assert.IsNotNull(results, "Results should not be null");
+                Assert.IsTrue(results.All(x => x.Vejnavn.StartsWith("Vester")),
+                    "All results should have Vejnavn starting with 'Vester'");
+                Assert.IsTrue(results.All(x => x.Postnr == "5540"),
+                    "All results should be in postnr 5540");
+                Assert.IsTrue(results.All(x => x.Kommunekode == "0440" || x.Kommunekode == "0450"),
+                    "All results should have Kommunekode 0440 or 0450");
+                foreach (var item in results)
+                    System.Console.WriteLine(
+                        $"Result: {item.Vejnavn} {item.HusNr}, {item.Postnr} {item.PostNrNavn} (kode={item.Kommunekode})");
+                System.Console.WriteLine($"Result count: {results.Count}");
+            }
+            catch (System.Net.WebException ex)
+            {
+                Assert.Inconclusive($"Network unavailable: {ex.Message}");
+            }
+            finally
+            {
+                var logs = stringWriter.ToString();
+                System.Console.WriteLine($"Logs:\n{logs}");
+                Assert.That(logs, Does.Contain("q=Vester*"),
+                    "Logs should contain q=Vester* from StartsWith");
+                Assert.That(logs, Does.Contain("postnr=5540"),
+                    "Logs should contain postnr=5540");
+                Assert.That(logs, Does.Contain("kommunekode=0440|0450"),
+                    "Logs should contain kommunekode=0440|0450 from OrElse pipe");
+            }
+        }
+
+        [Test()]
+        public void TestNotEqualSilentlySkippedLiveData()
+        {
+            // Integration test verifying NotEqual (!=) is silently skipped from REST
+            // and applied in-memory.
+            // Query: where a.Vejnavn == "Vestergade" && a.Postnr == "5540" && a.HusNr != "10"
+            // Expected REST: ?vejnavn=Vestergade&postnr=5540 (NotEqual excluded)
+            // In-memory: HusNr != "10"
+
+            var stringWriter = new StringWriter();
+            var adr = new DAWARepository<AdgangsAdresse>();
+            adr.Log = stringWriter;
+
+            var query = (from a in adr
+                         where a.Vejnavn == "Vestergade" && a.Postnr == "5540" && a.HusNr != "10"
+                         orderby a.HusNr
+                         select a).AsQueryable();
+
+            try
+            {
+                var results = query.ToList();
+                Assert.IsNotNull(results, "Results should not be null");
+                Assert.IsTrue(results.All(x => x.Vejnavn == "Vestergade"),
+                    "All results should have Vejnavn == Vestergade");
+                Assert.IsTrue(results.All(x => x.Postnr == "5540"),
+                    "All results should be in postnr 5540");
+                Assert.IsTrue(results.All(x => x.HusNr != "10"),
+                    "All results should NOT have HusNr == 10 (NotEqual applied in-memory)");
+                foreach (var item in results)
+                    System.Console.WriteLine(
+                        $"Result: {item.Vejnavn} {item.HusNr}, {item.Postnr} {item.PostNrNavn}");
+                System.Console.WriteLine($"Result count: {results.Count}");
+            }
+            catch (System.Net.WebException ex)
+            {
+                Assert.Inconclusive($"Network unavailable: {ex.Message}");
+            }
+            finally
+            {
+                var logs = stringWriter.ToString();
+                System.Console.WriteLine($"Logs:\n{logs}");
+                Assert.That(logs, Does.Contain("vejnavn=Vestergade"),
+                    "Logs should contain vejnavn=Vestergade");
+                Assert.That(logs, Does.Contain("postnr=5540"),
+                    "Logs should contain postnr=5540");
+                Assert.That(logs, Does.Not.Contain("husnr"),
+                    "NotEqual condition should NOT appear in the REST query");
             }
         }
     }

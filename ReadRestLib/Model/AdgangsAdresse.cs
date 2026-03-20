@@ -52,6 +52,12 @@ namespace ReadRestLib.Model
             get;
             set;
         }
+
+        public string Kommunekode
+        {
+            get;
+            set;
+        }
     }
 
 }

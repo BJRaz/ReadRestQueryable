@@ -378,8 +378,8 @@ namespace ReadRestLib.Tests
             //   orderby a.Vejnavn
             //   select a
             //
-            // Single-source, no join. StartsWith is a method call and should be
-            // excluded from the REST query (handled in-memory).
+            // Single-source, no join. StartsWith("Vester") is translated to q=Vester*
+            // in the REST query.
 
             // assign
             var stringWriter = new StringWriter();
@@ -398,10 +398,10 @@ namespace ReadRestLib.Tests
 
             var mainQuery = q.Evaluate();
 
-            // assert - StartsWith should not appear in query, only simple equality predicates
+            // assert - StartsWith("Vester") becomes q=Vester* in REST query
             Assert.IsNotEmpty(mainQuery);
-            Assert.That(mainQuery, Is.EqualTo("?husnr=10&postnr=5540"),
-                "Should contain husnr and postnr but not Vejnavn.StartsWith (method calls are excluded)");
+            Assert.That(mainQuery, Is.EqualTo("?husnr=10&q=Vester*&postnr=5540"),
+                "Should contain husnr, q=Vester* (from StartsWith), and postnr");
 
             // No joins
             Assert.AreEqual(0, q.JoinCount, "No join expressions expected");
@@ -422,12 +422,191 @@ namespace ReadRestLib.Tests
             {
                 var logs = stringWriter.ToString();
                 System.Console.WriteLine($"Logs:\n{logs}");
-                Assert.That(logs, Does.Contain("Query: '?husnr=10&postnr=5540'"),
-                    "Logs should contain the correct REST query");
+                Assert.That(logs, Does.Contain("Query: '?husnr=10&q=Vester*&postnr=5540'"),
+                    "Logs should contain the correct REST query with q=Vester*");
             }
+        }
+
+        [Test()]
+        public void TestStartsWithTranslatesToQParameter()
+        {
+            // Verifies that StartsWith("X") is translated to q=X* in the REST query.
+            // Query: where a.Vejnavn.StartsWith("Vester")
+            // Expected REST: ?q=Vester*
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Vejnavn.StartsWith("Vester")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?q=Vester*", querystring,
+                "StartsWith(\"Vester\") should translate to q=Vester*");
+        }
+
+        [Test()]
+        public void TestStartsWithCombinedWithEquality()
+        {
+            // Verifies StartsWith combined with equality predicates.
+            // Query: where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
+            // Expected REST: ?husnr=10&q=Vester*
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?husnr=10&q=Vester*", querystring,
+                "Should combine equality and StartsWith as q= parameter");
+        }
+
+        [Test()]
+        public void TestOrElseSamePropertyPipeDelimited()
+        {
+            // Verifies that OrElse (||) on the same property collapses to pipe-delimited values.
+            // Query: where a.Kommunekode == "0101" || a.Kommunekode == "0202"
+            // Expected REST: ?kommunekode=0101|0202
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Kommunekode == "0101" || a.Kommunekode == "0202"
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?kommunekode=0101|0202", querystring,
+                "OrElse on same property should produce pipe-delimited values");
+        }
+
+        [Test()]
+        public void TestOrElseThreeValuesSameProperty()
+        {
+            // Verifies that chained OrElse on the same property works for 3+ values.
+            // Query: where a.Kommunekode == "0101" || a.Kommunekode == "0202" || a.Kommunekode == "0303"
+            // Expected REST: ?kommunekode=0101|0202|0303
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Kommunekode == "0101" || a.Kommunekode == "0202" || a.Kommunekode == "0303"
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?kommunekode=0101|0202|0303", querystring,
+                "Chained OrElse on same property should produce pipe-delimited values");
+        }
+
+        [Test()]
+        public void TestOrElseDifferentPropertiesSilentlySkipped()
+        {
+            // Verifies that OrElse on different properties is silently skipped.
+            // Query: where a.Kommunekode == "0101" || a.Postnr == "5000"
+            // Expected REST: ? (empty — both sides skipped, applied in-memory)
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.Kommunekode == "0101" || a.Postnr == "5000"
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.AreEqual(string.Empty, querystring,
+                "OrElse on different properties should be silently skipped (empty query)");
+        }
+
+        [Test()]
+        public void TestNotEqualSilentlySkipped()
+        {
+            // Verifies that NotEqual (!=) is silently skipped, not thrown.
+            // Query: where a.HusNr == "10" && a.Postnr != "5540"
+            // Expected REST: ?husnr=10 (NotEqual is dropped)
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.HusNr == "10" && a.Postnr != "5540"
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?husnr=10", querystring,
+                "NotEqual should be silently skipped; only equality predicates in REST query");
+        }
+
+        [Test()]
+        public void TestContainsSilentlySkipped()
+        {
+            // Verifies that Contains method call is silently skipped (not translated to REST).
+            // Query: where a.HusNr == "10" && a.Vejnavn.Contains("gade")
+            // Expected REST: ?husnr=10
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.HusNr == "10" && a.Vejnavn.Contains("gade")
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?husnr=10", querystring,
+                "Contains should be silently skipped; only equality predicates in REST query");
+        }
+
+        [Test()]
+        public void TestCombinedEqualityStartsWithOrElseNotEqual()
+        {
+            // Verifies the combined query pattern from Program.cs:
+            //   where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
+            //         && (a.Kommunekode == "0101" || a.Kommunekode == "0202") && a.Postnr != "5540"
+            // Expected REST: ?husnr=10&q=Vester*&kommunekode=0101|0202
+            //   (NotEqual silently skipped)
+
+            var repo = new DAWARepository<AdgangsAdresse>();
+
+            var query = (from a in repo
+                         where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
+                               && (a.Kommunekode == "0101" || a.Kommunekode == "0202") && a.Postnr != "5540"
+                         select a).AsQueryable();
+
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var querystring = q.Evaluate();
+            Assert.IsNotEmpty(querystring);
+            Assert.AreEqual("?husnr=10&q=Vester*&kommunekode=0101|0202", querystring,
+                "Combined query: equality + StartsWith(q=) + OrElse(pipe) + NotEqual(skipped)");
         }
 
 
     }
 }
+
 
