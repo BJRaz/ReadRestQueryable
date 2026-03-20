@@ -170,6 +170,76 @@ namespace ReadRestLib.Tests
 
         }
 
+        [Test()]
+        public void TestJoinKeyPropagationFromInnerToOuter()
+        {
+            // Query where postnr constraint is only on the inner side (p.Nr == "5000")
+            // but should propagate to outer via join key (a.Postnr equals p.Nr)
+            // This mirrors the ReadRestApp/Program.cs query pattern
+
+            // assign
+            var stringWriter = new StringWriter();
+
+            var adgang = new DAWARepository<AdgangsAdresse>();
+            var postn = new DAWARepository<Postnummer>();
+
+            adgang.Log = postn.Log = stringWriter;
+
+            var query = (from a in adgang
+                         join p in postn on a.Postnr equals p.Nr
+                         where p.Nr == "5000" && a.HusNr == "10"
+                         select a).AsQueryable();
+
+            // act
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var mainQuery = q.Evaluate();
+
+            // assert - main query should have husnr from explicit outer predicate
+            // AND postnr propagated from inner p.Nr via join key
+            Assert.IsNotEmpty(mainQuery);
+            Assert.That(mainQuery, Is.EqualTo("?husnr=10&postnr=5000"),
+                "postnr=5000 should be propagated from inner p.Nr via join key a.Postnr equals p.Nr");
+
+            // Verify join was captured
+            Assert.AreEqual(1, q.JoinCount, "Expected one join expression");
+
+            var joinInfo = q.GetJoinAt(0);
+            Assert.IsNotNull(joinInfo, "Join info should not be null");
+
+            // Verify outer query includes propagated postnr
+            Assert.That(joinInfo.OuterQuery, Is.EqualTo("husnr=10&postnr=5000"),
+                "Outer query should include propagated postnr from join key");
+            Assert.That(joinInfo.InnerQuery, Is.EqualTo("nr=5000"),
+                "Inner query should have nr=5000");
+
+            System.Console.WriteLine($"Join key propagation test - main query: {mainQuery}");
+            System.Console.WriteLine($"Outer: {joinInfo.OuterQuery}, Inner: {joinInfo.InnerQuery}");
+
+            // Verify execution logs show both queries with correct parameters
+            try
+            {
+                foreach (var o in query)
+                {
+                    System.Console.WriteLine($"Result: {o}");
+                }
+            }
+            catch (System.Net.WebException ex)
+            {
+                System.Console.WriteLine($"Web request failed (expected in test environment): {ex.Message}");
+            }
+            finally
+            {
+                var logsAfterExecution = stringWriter.ToString();
+                System.Console.WriteLine($"Logs after execution:\n{logsAfterExecution}");
+                Assert.That(logsAfterExecution, Does.Contain("Query: '?husnr=10&postnr=5000'"),
+                    "Logs should contain AdgangsAdresse query with propagated postnr");
+                Assert.That(logsAfterExecution, Does.Contain("Query: '?nr=5000'"),
+                    "Logs should contain Postnummer query: nr=5000");
+            }
+        }
+
 
     }
 }

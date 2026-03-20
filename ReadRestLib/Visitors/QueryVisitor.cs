@@ -33,6 +33,10 @@ namespace ReadRestLib.Visitors
 			public string OuterQuery { get; set; }
 			public string InnerQuery { get; set; }
 			public string JoinKey { get; set; }
+			public Type OuterSourceType { get; set; }
+			public Type InnerSourceType { get; set; }
+			public string OuterParameterName { get; set; }
+			public string InnerParameterName { get; set; }
 		}
 
 		protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -108,24 +112,24 @@ namespace ReadRestLib.Visitors
 			return visitor.Visit(expr);
 		}
 
-		/// <summary>
-		/// Extracts the lambda expression from a Where MethodCall, unwrapping any Quote expressions.
-		/// </summary>
-		private LambdaExpression ExtractWhereLambda()
-		{
-			if (innerWhereExpression?.Arguments.Count <= 1)
-				return null;
+	/// <summary>
+	/// Extracts the lambda expression from a Where MethodCall, unwrapping any Quote expressions.
+	/// </summary>
+	public LambdaExpression ExtractWhereLambda()
+	{
+		if (innerWhereExpression?.Arguments.Count <= 1)
+			return null;
 
-			var arg = innerWhereExpression.Arguments[1];
-			
-			// Unwrap Quote expression if needed
-			if (arg.NodeType == ExpressionType.Quote)
-			{
-				arg = ((UnaryExpression)arg).Operand;
-			}
-			
-			return arg as LambdaExpression;
+		var arg = innerWhereExpression.Arguments[1];
+		
+		// Unwrap Quote expression if needed
+		if (arg.NodeType == ExpressionType.Quote)
+		{
+			arg = ((UnaryExpression)arg).Operand;
 		}
+		
+		return arg as LambdaExpression;
+	}
 
 		public string Evaluate()
 		{
@@ -140,15 +144,10 @@ namespace ReadRestLib.Visitors
 			Expression evaluateBody = whereBody;
 			if (joinInfos.Count > 0 && whereBody != null)
 			{
-				// Get all member names accessed in the Where body
-				var allMembers = new MemberNameCollectorVisitor().CollectMemberNames(whereBody);
+				// Collect inner parameter names from all captured join infos
+				var innerMembers = joinInfos.Select(j => j.InnerParameterName).Distinct().ToList();
 				
-				// The inner members are the ones accessed from the inner source
-				// We need to exclude these from the main query
-				// Assuming standard naming: outer source members accessed as "a", inner as "p"
-				var innerMembers = new List<string> { "p" };  // Could be parameterized
-				
-				// Create a filter that excludes the inner members
+				// Create a filter that excludes conditions referencing inner source members
 				var filterVisitor = new MemberNameExcludeVisitor(innerMembers);
 				var filtered = filterVisitor.Visit(whereBody);
 				if (filtered != null)
@@ -160,6 +159,33 @@ namespace ReadRestLib.Visitors
 
 			evaluator.Visit(evaluatedExpression);
 			var query = evaluator.Query;
+
+			// Propagate inner predicates to main (outer) query via join key equality.
+			// E.g. if join is "a.Postnr equals p.Nr" and inner has "p.Nr == 5000",
+			// infer "postnr=5000" for the outer query.
+			if (joinInfos.Count > 0 && whereBody != null)
+			{
+				foreach (var joinInfo in joinInfos)
+				{
+					if (joinInfo.OuterKeySelector?.Body is MemberExpression outerKeyMember
+						&& joinInfo.InnerKeySelector?.Body is MemberExpression innerKeyMember)
+					{
+						var innerKeyPropertyName = innerKeyMember.Member.Name;
+						var outerKeyPropertyName = outerKeyMember.Member.Name.ToLower();
+						var innerKeyValues = ExtractEqualityValues(whereBody, joinInfo.InnerParameterName, innerKeyPropertyName);
+
+						foreach (var value in innerKeyValues)
+						{
+							var param = $"{outerKeyPropertyName}={value}";
+							if (string.IsNullOrEmpty(query))
+								query = param;
+							else if (!query.Contains($"{outerKeyPropertyName}="))
+								query += "&" + param;
+						}
+					}
+				}
+			}
+
 			return string.IsNullOrEmpty(query) ? string.Empty : "?" + query;
 		}
 
@@ -198,22 +224,23 @@ namespace ReadRestLib.Visitors
 
 			foreach (var joinInfo in joinInfos)
 			{
+				// Use the actual parameter names captured from the join key selectors
+				var outerMember = joinInfo.OuterParameterName;
+				var innerMember = joinInfo.InnerParameterName;
+
+				// Determine the element types from the source expressions
+				var outerSourceType = GetSourceElementType(joinInfo.OuterSource);
+				var innerSourceType = GetSourceElementType(joinInfo.InnerSource);
+
 				var evaluatedJoinInfo = new JoinExpressionInfo
 				{
 					Index = joinInfo.Index,
-					JoinKey = GetJoinKeyString(joinInfo)
+					JoinKey = GetJoinKeyString(joinInfo),
+					OuterSourceType = outerSourceType,
+					InnerSourceType = innerSourceType,
+					OuterParameterName = outerMember,
+					InnerParameterName = innerMember
 				};
-
-				// Get the actual member names from the Where clause
-				// The first member should be the outer, and if there's a second, it's the inner
-				var outerMember = whereMembers?.FirstOrDefault(m => m != "a" && m != "p" && m.Length > 0) ?? "a";
-				var innerMember = whereMembers?.FirstOrDefault(m => m != outerMember && (m == "a" || m == "p")) ?? "p";
-				
-				// Actually, we know the members are "a" and "p" (or similar), so let's just use them if they exist
-				if (whereMembers != null && whereMembers.Contains("a"))
-					outerMember = "a";
-				if (whereMembers != null && whereMembers.Contains("p"))
-					innerMember = "p";
 
 				// Evaluate outer query with filtered Where conditions (filter by outer member name)
 				if (whereBody != null)
@@ -251,6 +278,27 @@ namespace ReadRestLib.Visitors
 					}
 				}
 
+				// Propagate inner predicates to outer query via join key equality.
+				// E.g. if join is "a.Postnr equals p.Nr" and inner has "p.Nr == 5000",
+				// infer "postnr=5000" for the outer query.
+				if (whereBody != null
+					&& joinInfo.OuterKeySelector?.Body is MemberExpression outerKeyMemberExpr
+					&& joinInfo.InnerKeySelector?.Body is MemberExpression innerKeyMemberExpr)
+				{
+					var innerKeyPropertyName = innerKeyMemberExpr.Member.Name;
+					var outerKeyPropertyName = outerKeyMemberExpr.Member.Name.ToLower();
+					var innerKeyValues = ExtractEqualityValues(whereBody, innerMember, innerKeyPropertyName);
+
+					foreach (var value in innerKeyValues)
+					{
+						var param = $"{outerKeyPropertyName}={value}";
+						if (string.IsNullOrEmpty(evaluatedJoinInfo.OuterQuery))
+							evaluatedJoinInfo.OuterQuery = param;
+						else if (!evaluatedJoinInfo.OuterQuery.Contains($"{outerKeyPropertyName}="))
+							evaluatedJoinInfo.OuterQuery += "&" + param;
+					}
+				}
+
 				result.Add(evaluatedJoinInfo);
 			}
 
@@ -265,6 +313,25 @@ namespace ReadRestLib.Visitors
 			var joinKeyOuter = joinInfo.OuterKeySelector?.Body.ToString() ?? "unknown";
 			var joinKeyInner = joinInfo.InnerKeySelector?.Body.ToString() ?? "unknown";
 			return $"{joinKeyOuter} equals {joinKeyInner}";
+		}
+
+		/// <summary>
+		/// Extracts the element type from a source expression.
+		/// For DAWARepository&lt;T&gt; or IQueryable&lt;T&gt;, returns T.
+		/// </summary>
+		private Type GetSourceElementType(Expression source)
+		{
+			var sourceType = source.Type;
+			// Check for IQueryable<T> or IEnumerable<T>
+			if (sourceType.IsGenericType)
+				return sourceType.GetGenericArguments()[0];
+			// Check implemented interfaces for IQueryable<T>
+			foreach (var iface in sourceType.GetInterfaces())
+			{
+				if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IQueryable<>))
+					return iface.GetGenericArguments()[0];
+			}
+			return sourceType;
 		}
 
 		/// <summary>
@@ -590,6 +657,70 @@ namespace ReadRestLib.Visitors
 						return true;
 				}
 				return false;
+			}
+		}
+
+		/// <summary>
+		/// Extracts constant equality values from a where expression that match a specific
+		/// transparent identifier member and property name.
+		/// E.g. given "p.Nr == '5000'" with memberName="p" and propertyName="Nr", returns ["5000"].
+		/// </summary>
+		private List<string> ExtractEqualityValues(Expression whereBody, string memberName, string propertyName)
+		{
+			var visitor = new EqualityValueExtractor(memberName, propertyName);
+			visitor.Visit(whereBody);
+			return visitor.Values;
+		}
+
+		/// <summary>
+		/// Visitor that extracts constant values from equality comparisons involving a specific
+		/// transparent identifier member and property.
+		/// Pattern: &lt;&gt;h__TransparentIdentifier0.memberName.propertyName == constant
+		/// </summary>
+		private class EqualityValueExtractor : ExpressionVisitor
+		{
+			private readonly string _memberName;
+			private readonly string _propertyName;
+			public List<string> Values { get; } = new List<string>();
+
+			public EqualityValueExtractor(string memberName, string propertyName)
+			{
+				_memberName = memberName;
+				_propertyName = propertyName;
+			}
+
+			protected override Expression VisitBinary(BinaryExpression node)
+			{
+				if (node.NodeType == ExpressionType.Equal)
+				{
+					var memberSide = GetMatchingMember(node.Left) ?? GetMatchingMember(node.Right);
+					var constantSide = GetConstantValue(node.Right) ?? GetConstantValue(node.Left);
+
+					if (memberSide != null && constantSide != null)
+						Values.Add(constantSide);
+				}
+				return base.VisitBinary(node);
+			}
+
+			private string GetMatchingMember(Expression expr)
+			{
+				// Pattern: <>h__TransparentIdentifier0.memberName.propertyName
+				if (expr is MemberExpression outerMember
+					&& outerMember.Member.Name == _propertyName
+					&& outerMember.Expression is MemberExpression innerMember
+					&& innerMember.Member.Name == _memberName
+					&& innerMember.Expression.ToString().StartsWith("<>h__TransparentIdentifier"))
+				{
+					return _propertyName;
+				}
+				return null;
+			}
+
+			private string GetConstantValue(Expression expr)
+			{
+				if (expr is ConstantExpression constant && constant.Value != null)
+					return constant.Value.ToString();
+				return null;
 			}
 		}
 
