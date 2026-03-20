@@ -82,10 +82,21 @@ ReadRestApp/              # Console example usage
 
 ### Expression Tree Handling
 
+#### Supported REST Operators
+- **`Equal` (`==`)**: Only operator converted to REST query parameters (e.g., `postnr=5000`)
+- **`And`/`AndAlso` (`&&`)**: Combines multiple equality predicates in REST query
+
+#### Unsupported REST Operators (Applied In-Memory)
+- **`NotEqual` (`!=`)**: Excluded from REST; throws `InvalidOperationException` if encountered in filter expression; avoid using
+- **`GreaterThan`, `LessThan`, `GreaterThanOrEqual`, `LessThanOrEqual`** (`>`, `<`, `>=`, `<=`): Not supported in REST query
+- **`Or`/`OrElse` (`||`)**: Not supported in REST query
+- **Method calls** (`StartsWith`, `Contains`, `EndsWith`, etc.): Excluded from REST, applied in-memory filtering
+
+#### LINQ Operation Behavior
 - **Parameters must stay unparameterized** in `Evaluator.PartialEval()` — constant arithmetic/method calls are pre-evaluated, parameters are preserved
-- **Join expressions** are partially supported — extracted into metadata but full relational algebra not implemented; most filtering still happens in-memory
-- **OrderBy/Select** after the initial `where` execute in-memory on fetched data (not pushed to API)
 - **Only the first `where` in the same LINQ statement is converted to query parameters**; nested `where` clauses execute in-memory
+- **OrderBy/Select** after the initial `where` execute in-memory on fetched data (not pushed to API)
+- **Join expressions** are partially supported — extracted into metadata, separate REST calls made, join completed in-memory; full relational algebra not implemented
 - **ExpressionTreeModifier** must only replace constants of type `DAWARepository<T>` with the fetched `IEnumerable<T>`; any other replacements risk breaking the expression tree structure
 
 ### Newtonsoft.Json Deserialization
@@ -127,7 +138,17 @@ dotnet run --project ReadRestApp/ReadRestApp.csproj
 
 ## Common Debugging Points
 
-- **Query string not generated?** → Check QueryVisitor.Visit() logs; ensure `where` clause is in the outermost LINQ statement
+- **Query string not generated?** → Check QueryVisitor.Visit() logs; ensure `where` clause is in the outermost LINQ statement; verify only `==` and `&&` operators are used
+- **`InvalidOperationException: Operator not supported`?** → Unsupported operator in where clause (`!=`, `>`, `<`, `||`, etc.); must either remove or expect it to fail; refactor query to use only equality predicates combined with `&&`
 - **Deserialization fails?** → Verify model property names match API JSON response (case-sensitive); test with IntegrationTest.cs
-- **In-memory filtering slower than expected?** → OrderBy/Select not pushed to API; move all filtering to initial `where`
+- **In-memory filtering slower than expected?** → OrderBy/Select not pushed to API; move all filtering to initial `where`; method calls like `StartsWith` must be in `where` for in-memory application
 - **Type mismatch at expression evaluation?** → Check ExpressionTreeModifier is replacing the correct constant type
+- **Empty log output?** → Query may have thrown an exception during evaluation; add exception handling and check TestRunner output for error details
+
+## Known Limitations
+
+1. **`NotEqual` (`!=`) not implemented**: Will throw runtime exception. Use alternative approach: fetch with equality predicates and filter in-memory using LINQ
+2. **Comparison operators not supported**: No `>`, `<`, `>=`, `<=` in REST queries
+3. **No `Or` logic**: Cannot express `where a == "x" || a == "y"` in REST; must make separate queries
+4. **No pagination**: `Skip()` and `Take()` not pushed to API; all results fetched then filtered in-memory
+5. **No sorting at REST level**: `OrderBy` applied after fetch; for large result sets, consider filtering more aggressively in `where`

@@ -372,5 +372,64 @@ namespace ReadRestLib.Tests
                     "Logs should contain the correct REST query without StartsWith");
             }
         }
+
+        [Test()]
+        public void TestWhereWithStartsWithMethodCallLiveData()
+        {
+            // Integration test mirroring the Program.cs main query:
+            //   from a in adr
+            //   where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+            //   orderby a.Vejnavn
+            //   select a
+            //
+            // Tests single-source query with StartsWith method-call exclusion and in-memory ordering.
+            // Expected: REST query has husnr=10&postnr=5540 (StartsWith excluded from REST)
+            //           results are filtered in-memory for Vejnavn.StartsWith("Vester")
+            //           results are ordered by Vejnavn (in-memory)
+
+            var stringWriter = new StringWriter();
+            var adr = new DAWARepository<AdgangsAdresse>();
+            adr.Log = stringWriter;
+
+            var query = (from a in adr
+                         where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+                         orderby a.Vejnavn
+                         select a).AsQueryable();
+
+            try
+            {
+                var results = query.ToList();
+                Assert.IsNotNull(results, "Results should not be null");
+                Assert.IsTrue(results.Count > 0,
+                    "Should return at least one address matching the predicates");
+                Assert.IsTrue(results.All(x => x.HusNr == "10"),
+                    "All results should have HusNr == 10");
+                Assert.IsTrue(results.All(x => x.Postnr == "5540"),
+                    "All results should be in postnr 5540");
+                Assert.IsTrue(results.All(x => x.Vejnavn.StartsWith("Vester")),
+                    "All results should have Vejnavn starting with 'Vester' (applied in-memory)");
+                // Verify ordering is applied (in-memory after fetch)
+                var vejnavne = results.Select(x => x.Vejnavn).ToList();
+                var sortedVejnavne = vejnavne.OrderBy(v => v).ToList();
+                Assert.AreEqual(sortedVejnavne, vejnavne,
+                    "Results should be ordered by Vejnavn (applied in-memory)");
+                foreach (var item in results)
+                    System.Console.WriteLine(
+                        $"Result: {item.Vejnavn} {item.HusNr}, {item.Postnr} {item.PostNrNavn}");
+                System.Console.WriteLine($"Result count: {results.Count}");
+            }
+            catch (System.Net.WebException ex)
+            {
+                Assert.Inconclusive($"Network unavailable: {ex.Message}");
+            }
+            finally
+            {
+                var logs = stringWriter.ToString();
+                System.Console.WriteLine($"Logs:\n{logs}");
+                // husnr and postnr should be in the REST query; StartsWith is not REST-friendly
+                Assert.That(logs, Does.Contain("Query: '?husnr=10&postnr=5540'"),
+                    "Logs should contain the REST query with husnr and postnr (StartsWith excluded)");
+            }
+        }
     }
 }
