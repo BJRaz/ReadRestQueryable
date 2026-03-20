@@ -11,12 +11,11 @@ namespace ReadRestApp
         {
 
             var adr = new DAWARepository<AdgangsAdresse>();
-            //var pst = new DAWARepository<Postnummer>();
 
-			adr.Log = Console.Out; // set log to console for demonstration
+            adr.Log = Console.Out; // set log to console for demonstration
 
             var items = from a in adr
-                        where a.HusNr == "10" && (a.Kommunekode == "0101" || a.Kommunekode == "0202") && a.Postnr != "5540"
+                        where a.HusNr == "10" && (a.Kommunekode == "0101" || a.Kommunekode == "0202") && a.Postnr != "2100"
                         orderby a.Vejnavn
                         select a;
 
