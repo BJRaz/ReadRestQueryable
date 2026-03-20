@@ -25,7 +25,11 @@ namespace ReadRestLib.Visitors
 			get
 			{
 				string result = querystr.ToString();
-				// Clean up any leading or trailing ampersands
+				// Clean up any leading, trailing, or consecutive ampersands
+				// (consecutive ampersands occur when unsupported predicates like
+				// method calls are silently dropped from the middle of an expression)
+				while (result.Contains("&&"))
+					result = result.Replace("&&", "&");
 				return result.TrimStart('&').TrimEnd('&');
 			}
 		}

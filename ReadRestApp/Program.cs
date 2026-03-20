@@ -16,14 +16,13 @@ namespace ReadRestApp
 			adr.Log = pst.Log = Console.Out; // set log to console for demonstration
 
             var items = from a in adr
-                        join p in pst on a.Postnr equals p.Nr
-                        where p.Nr == "5000" && a.HusNr == "10" && a.Vejnavn.StartsWith("Vester")
+                        where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
                         orderby a.Vejnavn
-                        select new { adresse = a, postnr = p };
+                        select a;
 
             foreach (var item in items)
             {
-                Console.WriteLine($"Got item: {item.adresse.Vejnavn} {item.adresse.HusNr}, {item.postnr.Navn} ({item.postnr.Nr})");
+                Console.WriteLine($"Got item: {item.Vejnavn} {item.HusNr}, {item.Postnr} {item.PostNrNavn}");
             }
             Console.WriteLine("Done");
         }

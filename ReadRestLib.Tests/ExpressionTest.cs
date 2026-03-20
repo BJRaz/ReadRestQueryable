@@ -240,6 +240,64 @@ namespace ReadRestLib.Tests
             }
         }
 
+        [Test()]
+        public void TestReadRestAppMainQuery()
+        {
+            // Matches the current ReadRestApp/Program.cs Main query exactly:
+            //   from a in adr
+            //   where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+            //   orderby a.Vejnavn
+            //   select a
+            //
+            // Single-source, no join. StartsWith is a method call and should be
+            // excluded from the REST query (handled in-memory).
+
+            // assign
+            var stringWriter = new StringWriter();
+
+            var adr = new DAWARepository<AdgangsAdresse>();
+            adr.Log = stringWriter;
+
+            var query = (from a in adr
+                         where a.HusNr == "10" && a.Vejnavn.StartsWith("Vester") && a.Postnr == "5540"
+                         orderby a.Vejnavn
+                         select a).AsQueryable();
+
+            // act
+            var q = new QueryVisitor();
+            q.Visit(query.Expression);
+
+            var mainQuery = q.Evaluate();
+
+            // assert - StartsWith should not appear in query, only simple equality predicates
+            Assert.IsNotEmpty(mainQuery);
+            Assert.That(mainQuery, Is.EqualTo("?husnr=10&postnr=5540"),
+                "Should contain husnr and postnr but not Vejnavn.StartsWith (method calls are excluded)");
+
+            // No joins
+            Assert.AreEqual(0, q.JoinCount, "No join expressions expected");
+
+            // Verify execution produces correct REST URL
+            try
+            {
+                foreach (var item in query)
+                {
+                    System.Console.WriteLine($"Result: {item.Vejnavn} {item.HusNr}, {item.Postnr} {item.PostNrNavn}");
+                }
+            }
+            catch (System.Net.WebException ex)
+            {
+                System.Console.WriteLine($"Web request failed (expected in test environment): {ex.Message}");
+            }
+            finally
+            {
+                var logs = stringWriter.ToString();
+                System.Console.WriteLine($"Logs:\n{logs}");
+                Assert.That(logs, Does.Contain("Query: '?husnr=10&postnr=5540'"),
+                    "Logs should contain the correct REST query");
+            }
+        }
+
 
     }
 }
