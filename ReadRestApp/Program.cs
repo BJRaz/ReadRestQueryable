@@ -7,15 +7,22 @@ namespace ReadRestApp
 {
 	class MainClass
 	{
+		static string GetPostnr(string x)
+		{
+			return x;
+		}
+
 		public static void Main(string[] args)
 		{
 			Console.WriteLine("Henter adresser");
-			int x = 5220;
+			int x = 5540;
+			var provider = new AdgangsAdresseRepository<AdgangsAdresse>();
+			
 
-			var items = from a in new AdgangsAdresseRepository<AdgangsAdresse>()
-						where a.Postnr == x.ToString()
-						where a.SupplerendeBynavn == "Fraugde" && a.HusNr == "6"
-						orderby a.Vejnavn
+
+            var items = from a in provider
+                        where a.Vejnavn == "Vestergade" && a.HusNr == "22"
+                        orderby a.Postnr, a.HusNr
 						select a;
 			var i = 1;
 			foreach (var item in items)

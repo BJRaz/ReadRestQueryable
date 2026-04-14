@@ -4,4 +4,5 @@ bin/
 *.userprefs
 packages/
 *.suo
+.vs
 

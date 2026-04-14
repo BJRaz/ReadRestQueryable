@@ -26,7 +26,6 @@ namespace ReadRestLib.Visitors
 		{
 			var evaluator = new EvaluateVisitor();
 			evaluator.Visit(innerWhereExpression);
-			Console.WriteLine(evaluator.Query);
 			return evaluator.Query;
 		}
 	}

@@ -2,6 +2,7 @@
 using System.Linq;
 using ReadRestLib.Visitors;
 using ReadRestLib.Readers;
+using System.IO;
 
 namespace ReadRestLib
 {
@@ -9,7 +10,7 @@ namespace ReadRestLib
 	{
 		Type typeOfElement;
 
-		public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
+        public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
 		{
 			typeOfElement = typeof(TElement);
 			return new AdgangsAdresseRepository<TElement>(this, expression);
@@ -55,8 +56,9 @@ namespace ReadRestLib
 		{
 			var v = new QueryVisitor();
 			v.Visit(expression);
-
-			var reader = new AdgangsAdresseReader<TResult>(v.Evaluate());
+			var query = v.Evaluate();
+			Console.WriteLine(query);
+			var reader = new AdgangsAdresseReader<TResult>(query);
 			return reader.AsQueryable();
 		}
 
@@ -64,5 +66,6 @@ namespace ReadRestLib
 		{
 			return new ExpressionTreeModifier<TResult>(queryable);
 		}
-	}
+
+    }
 }

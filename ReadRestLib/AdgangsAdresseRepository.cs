@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -46,6 +47,13 @@ namespace ReadRestLib
 		{
 			get { return _provider; }
 		}
-	}
+
+        public TextWriter Log { get; set; }
+
+		private void WriteLog(string logmessage)
+		{
+			if(Log != null) Log.Write(logmessage);
+		}
+    }
 }
 
